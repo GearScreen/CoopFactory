@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CoopFactory</title>
+    <link rel="icon" href="Favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="gears.js"></script>
+</head>
+
+<body>
+    <h1>CoopFactory : The Number Must Go Up</h1>
+
+    <div id="notification" style="display: none; position: fixed; top: 10px; right: 10px; background-color: #4CAF50; color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
+        Room ID copied to clipboard!
+    </div>
+
+    <div id="usernameSection">
+        <h2 class="margin_01">Username : <span id="usernameDisplay"></span></h2>
+        <input type="text" id="usernameInput" placeholder="Username">
+        <button onclick="setUsername()">Set Username</button>
+        <div class="wh_01"></div>
+    </div>
+
+    <div id="createRoomSection">
+        <h2 class="margin_02">Room :</h2>
+        <button onclick="createRoom()">Create Room</button>
+        <h3 class="margin_02">Or</h3>
+        <div class="wh_01"></div>
+    </div>
+
+    <div id="joinRoomSection">
+        <input type="text" id="roomIdInput" placeholder="Room ID">
+        <button onclick="joinRoom()">Join Room</button>
+        <div class="wh_01"></div>
+    </div>
+
+    <div id="gameSection" style="display: none;">
+        <h2 class="margin_02">Room :</h2>
+        <button onclick="leaveRoom()" class="bg_color_01">Leave Room</button>
+        <p>Room ID : <strong><span id="RoomIdDisplay"></span></strong> <button onclick="copyRoomIdToClipboard()">Copy</button></p>
+        <p><strong><span id="playerCount">1</span></strong> Players in room: <span id="playersList"></span></p>
+        <div class="wh_01"></div>
+        <h2 class="margin_02">Factory :</h2>
+        <p class="font_01">Score: <strong><span id="scoreDisplay">0</span></strong> &nbsp; &nbsp; &nbsp;
+            Ressources: <strong><span id="ressourcesDisplay">0</span></strong></p>
+        <button onclick="incrementScore()" class="wh_02"><strong>Generate Score</strong></button>
+        <div class="wh_01"></div>
+        <div id="chatSection">
+            <h2 class="margin_02">Chat :</h2>
+            <div class="border_01 wh_chat" id="chatBox">
+            </div>
+            <input type="text" id="chatInput" placeholder="Message...">
+            <button onclick="sendChatMessage()">Enter</button>
+        </div>
+    </div>
+</body>
+
+</html>
