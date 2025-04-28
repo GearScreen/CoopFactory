@@ -23,3 +23,10 @@ This project uses **Node.js**, **Socket.IO**, and **Express** for the backend, a
 - [**Random Username Generator**](https://randomusernameapi.github.io/).
 
 ---
+
+## Fonts Used
+
+-[VT323](https://fonts.google.com/specimen/VT323)
+-[Black Ops One](https://fonts.google.com/specimen/Black+Ops+One)
+
+---

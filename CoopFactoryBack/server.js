@@ -33,7 +33,7 @@ io.on("connection", (socket) => {
 
     // CREATE Room
     socket.on("createRoom", (roomId) => {
-        rooms[roomId] = { players: [createRoomPlayer()], score: 0 };
+        rooms[roomId] = { players: [createRoomPlayer()], score: 0, startTime: Date.now() };
         joinRoom(roomId);
 
         //Callback

@@ -1,3 +1,17 @@
+button {
+    font-family: "VT323", monospace;
+    font-weight: 400;
+    font-size: large;
+    font-style: normal;
+}
+
+input {
+    font-family: "VT323", monospace;
+    font-weight: 400;
+    font-size: large;
+    font-style: normal;
+}
+
 /* #region colors */
 
 .color_01 {
@@ -14,6 +28,23 @@
     font-size: 2em;
 }
 
+.font_02 {
+    font-size: 1.5em;
+}
+
+.black-ops-one-regular {
+    font-family: "Black Ops One", system-ui;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.vt323-regular {
+    font-family: "VT323", monospace;
+    font-weight: 400;
+    font-size: large;
+    font-style: normal;
+}
+
 /* #region Display */
 
 .wh_01 {
@@ -26,9 +57,13 @@
     height: 5em;
 }
 
-.wh_chat {
+.wh_03 {
     width: 60em;
-    height: 10em;
+}
+
+.wh_04 {
+    width: 5em;
+    height: 5em;
 }
 
 .border_01 {
@@ -42,8 +77,15 @@
 
 .grid_01 {
     display: grid;
-    grid-template-columns: auto auto;
-    gap: 1em;
+    grid-template-columns: min-content min-content;
+    grid-template-rows: min-content min-content;
+    grid-gap: .5em;
+}
+
+.grid_02 {
+    display: grid;
+    grid-template-columns: min-content min-content;
+    grid-gap: .5em;
 }
 
 .margin_01 {
@@ -52,6 +94,16 @@
 
 .margin_02 {
     margin-bottom: 0em;
+}
+
+/* #endregion */
+
+/* #region Chat */
+
+.wh_chat {
+    width: 60em;
+    height: 10em;
+    overflow: scroll;
 }
 
 /* #endregion */
