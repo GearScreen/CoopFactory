@@ -5,10 +5,13 @@ let currentUsername = "DefaultUsername";
 
 //#region Backend Interaction
 
+// SET Username
 function setUsername() {
-    const usernameInput = document.getElementById("usernameInput").value;
+    const usernameInput = document.getElementById("usernameInput");
+
     if (usernameInput) {
-        currentUsername = usernameInput;
+        currentUsername = usernameInput.value;
+        usernameInput.value = ""; // Clear the input field
         socket.emit("setUsername", currentUsername);
         console.log("Username set:", currentUsername);
     }
@@ -20,15 +23,15 @@ socket.on("usernameSet", (username) => {
 
 //CREATE Room
 function createRoom() {
-    currentRoomId = Math.random().toString(36).substring(2, 8); // Random room ID
+    const randomRoomId = Math.random().toString(36).substring(2, 8);
 
     //console.log("Creating Room ID:", currentRoomId);
-    socket.emit("createRoom", currentRoomId);
+    socket.emit("createRoom", randomRoomId);
 }
 
-socket.on("roomCreated", (roomId) => {
-    //console.log("Room created:", roomId);
-    enterRoom(roomId);
+socket.on("roomCreated", (roomInfo) => {
+    console.log("Room created:", roomInfo);
+    enterRoom(roomInfo);
 });
 
 //JOIN Room
@@ -41,15 +44,17 @@ function joinRoom() {
     }
 }
 
-socket.on("roomJoined", (roomId, roomScore) => {
-    //console.log("Room joined:", roomId);
-    enterRoom(roomId);
-    updateScoreDisplay(roomScore);
+socket.on("roomJoined", (roomInfo) => {
+    //console.log("Room joined:", roomInfo);
+    enterRoom(roomInfo);
+    updateScoreDisplay(roomInfo.score);
 });
 
 //ENTER Room
-function enterRoom(roomId) {
-    currentRoomId = roomId;
+function enterRoom(roomInfo) {
+    currentRoomId = roomInfo.id;
+
+    updatePlayerList(roomInfo.players.map((player) => player.name));
 
     // Hide the room creation/joining section
     document.getElementById("createRoomSection").style.display = "none";
@@ -66,7 +71,7 @@ function leaveRoom() {
         return;
     }
 
-    socket.emit("leaveRoom", currentRoomId);
+    socket.emit("leaveRoom");
 
     // Reset the game section
     document.getElementById("gameSection").style.display = "none";
@@ -75,14 +80,6 @@ function leaveRoom() {
 
     // Reset the room ID
     currentRoomId = null;
-}
-
-function getRoomInfo() {
-    if (currentRoomId) {
-        socket.emit("getRoomInfo", currentRoomId);
-    } else {
-        alert("You are not in a room!");
-    }
 }
 
 function sendChatMessage() {
@@ -103,6 +100,7 @@ function incrementScore() {
 
 //#region Frontend/Display
 
+// When DOM Has Finished Loading
 document.addEventListener("DOMContentLoaded", () => {
     updateUsernameDisplay(currentUsername);
 
@@ -126,6 +124,26 @@ function updateUsernameDisplay(username) {
     } else {
         console.error("Username display element with id 'usernameDisplay' not found.");
     }
+}
+
+function updatePlayerList(playersNameList) {
+    const playerList = document.getElementById("playersList");
+
+    // Clear the current list
+    playerList.innerHTML = "";
+
+    let pList = "";
+
+    // Add each player to the list
+    playersNameList.forEach((name) => {
+        // const playerElement = document.createElement("div");
+        // playerElement.textContent = name;
+        // playerList.appendChild(playerElement);
+
+        pList += `<strong>${name}</strong>, `;
+    });
+
+    playerList.innerHTML = pList;
 }
 
 function updateScoreDisplay(score) {
@@ -217,24 +235,31 @@ function showNotification(message, isError = false) {
 
 //#region Socket General Event listeners
 
-socket.on("playerJoined", (playerCount) => {
-    updatePlayerCount(playerCount);
+socket.on("playerJoined", (joinInfo) => {
+    updatePlayerCount(joinInfo.playerCount);
+    updatePlayerList(joinInfo.playersNameList);
 });
 
-socket.on("playerLeft", (playerCount) => {
-    //console.log("Player left room:", playerCount);
-    updatePlayerCount(playerCount);
+socket.on("playerLeft", (joinInfo) => {
+    //console.log("Player left room:", joinInfo);
+    updatePlayerCount(joinInfo.playerCount);
+    updatePlayerList(joinInfo.playersNameList);
+});
+
+socket.on("playerListUpdate", (playersNameList) => {
+    console.log("Player list update:", playersNameList);
+    updatePlayerList(playersNameList);
 });
 
 socket.on("scoreUpdate", (newScore) => {
     updateScoreDisplay(newScore);
 });
 
-socket.on("chatMessage", (username, message) => {
-    //console.log("Chat message received:", username, message);
+socket.on("chatMessage", (chatMessageInfo) => {
+    //console.log("Chat message received:", chatMessageInfo);
     const chatBox = document.getElementById("chatBox");
     const messageElement = document.createElement("div");
-    messageElement.innerHTML = `<strong>${username}</strong>: ${message}`;
+    messageElement.innerHTML = `[${chatMessageInfo.timestamp}] <strong>${chatMessageInfo.player}</strong>: ${chatMessageInfo.message}`;
     chatBox.appendChild(messageElement);
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
 });

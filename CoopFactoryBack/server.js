@@ -14,32 +14,21 @@ const io = socketIo(server, {
     },
 });
 
+// Game Room List
 const rooms = {};
 
 // Socket.io CONNECTION handling
 io.on("connection", (socket) => {
     console.log("New player connected:", socket.id);
 
+    // Variables for each players
+    socket.username = "DefaultUsername";
+    socket.currentRoomId = null; // (Game Room)
+
     // DISCONNECT
     socket.on("disconnect", () => {
         console.log("Player disconnected:", socket.id);
         leaveRoom(socket.currentRoomId);
-    });
-
-    socket.username = "DefaultUsername";
-    socket.currentRoomId = null; //(Game Room)
-
-    // SET Username
-    socket.on("setUsername", (username) => {
-        socket.username = username;
-        socket.emit("usernameSet", username);
-
-        if (socket.currentRoomId) {
-            rooms[socket.currentRoomId].players[socket.id] = username; //Update
-            io.to(roomId).emit("playerListUpdate");
-        }
-
-        console.log(`Username set for ${socket.id}: ${username}`);
     });
 
     // CREATE Room
@@ -48,7 +37,7 @@ io.on("connection", (socket) => {
         joinRoom(roomId);
 
         //Callback
-        socket.emit("roomCreated", roomId);
+        socket.emit("roomCreated", roomInfo());
         console.log(`Room ${roomId} created by ${socket.id}`);
     });
 
@@ -57,12 +46,17 @@ io.on("connection", (socket) => {
         const room = rooms[roomId];
 
         if (room) {
+            if (room.players.length >= 4) {
+                socket.emit("error", "Room is full!");
+                return;
+            }
+
             room.players.push(createRoomPlayer());
             joinRoom(roomId);
 
             //Callbacks
-            socket.emit("roomJoined", roomId, room.score);
-            io.to(roomId).emit("playerJoined", room.players.length);
+            socket.emit("roomJoined", roomInfo(room));
+            io.to(roomId).emit("playerJoined", getJoinInfo());
             console.log(`Player ${socket.id} joined room ${roomId}`);
         } else {
             socket.emit("error", "Room does not exist!");
@@ -70,9 +64,24 @@ io.on("connection", (socket) => {
     });
 
     // LEAVE Room
-    socket.on("leaveRoom", (roomId) => {
+    socket.on("leaveRoom", () => {
         console.log(`Player : ${socket.id} Leaving Room : ${socket.currentRoomId}`);
-        leaveRoom(roomId);
+        leaveRoom(socket.currentRoomId);
+    });
+
+    // SET Username
+    socket.on("setUsername", (username) => {
+        socket.username = username;
+        socket.emit("usernameSet", username);
+
+        const room = getRoom();
+
+        if (room) {
+            getRoomPlayer().name = username;
+            io.to(socket.currentRoomId).emit("playerListUpdate", room.players.map((player) => player.name));
+        }
+
+        console.log(`Username set for ${socket.id}: ${username}`);
     });
 
     // CHAT Message
@@ -80,38 +89,27 @@ io.on("connection", (socket) => {
         const room = rooms[socket.currentRoomId];
 
         if (room) {
+            chatMessageInfo = {
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+                player: username,
+                message: message,
+            };
+
             // Send Message to all players in the room
-            io.to(socket.currentRoomId).emit("chatMessage", username, message);
+            io.to(socket.currentRoomId).emit("chatMessage", chatMessageInfo);
             //console.log(`Message from ${socket.id} in room ${socket.currentRoomId}: ${message}`);
         } else {
             socket.emit("error", "Room does not exist!");
         }
     });
 
-    // Provide safe full room info
-    socket.on("getRoomInfo", (roomId) => {
-        const room = rooms[roomId];
-
-        if (room) {
-            const roomInfo = {
-                players: room.players.map((player) => ({
-                    name: player.name,
-                })),
-                score: room.score,
-            };
-            socket.emit("roomInfo", roomInfo);
-        } else {
-            socket.emit("error", "Room does not exist!");
-        }
-    });
-
     // Increment Room score
-    socket.on("incrementScore", (roomId) => {
-        const room = rooms[roomId];
+    socket.on("incrementScore", () => {
+        const room = getRoom();
 
         if (room) {
             room.score++;
-            io.to(roomId).emit("scoreUpdate", room.score);
+            io.to(socket.currentRoomId).emit("scoreUpdate", room.score);
         }
     });
 
@@ -122,6 +120,7 @@ io.on("connection", (socket) => {
     }
 
     function leaveRoom(roomId) {
+        // Check if the player is in the room
         if (!socket.rooms.has(roomId)) {
             console.log(`Player ${socket.id} is not in room ${roomId}`);
             return;
@@ -136,7 +135,7 @@ io.on("connection", (socket) => {
         }
 
         // Notify remaining players in the room
-        io.to(roomId).emit("playerLeft", room.players.length);
+        io.to(roomId).emit("playerLeft", getJoinInfo());
 
         console.log(`Player ${socket.id} removed from room ${roomId}`);
 
@@ -150,13 +149,63 @@ io.on("connection", (socket) => {
         socket.currentRoomId = null;
     }
 
+    // Helper function to create a "room player" object that stores multiple values
     function createRoomPlayer() {
         return {
             id: socket.id,
             name: socket.username,
         };
     }
+
+    // Return Game Room object
+    function getRoom() {
+        if (socket.currentRoomId) {
+            return rooms[socket.currentRoomId];
+        }
+
+        console.log("getRoom: No current room ID");
+        return null;
+    }
+
+    // Create Room Info object -> provide safe access to Room data to Frontend
+    function roomInfo(room = getRoom()) {
+        if (room) {
+            return {
+                id: socket.currentRoomId,
+                players: room.players.map((player) => ({
+                    name: player.name,
+                })),
+                score: room.score,
+            };
+        }
+
+        console.log("RoomInfo: Room param null");
+        return null;
+    }
+
+    function getRoomPlayer(room = getRoom()) {
+        return room.players.find((player) => player.id === socket.id);
+    }
+
+    function getJoinInfo(room = getRoom()) {
+        return {
+            playerCount: room.players.length,
+            playersNameList: room.players.map((player) => player.name),
+        };
+    }
 });
+
+//#region UTILS
+
+function getCurrentDateTime() {
+    const now = new Date();
+    const date = now.toLocaleDateString(); // Format: MM/DD/YYYY
+    const time = now.toLocaleTimeString(); // Format: HH:MM:SS AM/PM
+    //const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); // 24-hour format
+    return `${date} ${time}`;
+}
+
+//#endregion
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
