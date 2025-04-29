@@ -28,7 +28,7 @@ function joinRoom() {
 socket.on("roomJoined", (roomInfo) => {
     //console.log("Room joined:", roomInfo);
     enterRoom(roomInfo);
-    updateScoreDisplay(roomInfo.score);
+    updateScoreDisplay(roomInfo.gameInfo.score);
 });
 
 function notifyLeaveRoom() {

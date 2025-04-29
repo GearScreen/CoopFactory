@@ -21,16 +21,15 @@ const rooms = {};
 io.on("connection", (socket) => {
     console.log("New player connected:", socket.id);
 
-    // Variables for each players
-    socket.username = "DefaultUsername";
-    socket.currentRoomId = null; // (Game Room)
+    // Variables for each Socket (player)
     socket.gameRoom = null;
+    socket.roomPlayer = new RoomPlayer(socket.id, "Default", 0); // Infos about socket's player representation
     socket.lastActionTime = Date.now();
 
     // DISCONNECT
     socket.on("disconnect", () => {
         console.log("Player disconnected:", socket.id);
-        leaveRoom();
+        leaveGameRoom();
     });
 
     // CREATE Room
@@ -40,7 +39,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        rooms[roomId] = { players: [createRoomPlayer()], score: 0, startTime: Date.now() };
+        rooms[roomId] = new Room(roomId, [socket.roomPlayer]);
         joinRoom(roomId);
 
         trySetUsername(playerUsername);
@@ -64,21 +63,21 @@ io.on("connection", (socket) => {
             return;
         }
 
-        room.players.push(createRoomPlayer());
+        room.players.push(socket.roomPlayer);
         joinRoom(roomId);
 
         trySetUsername(playerUsername);
 
         //Callbacks
         socket.emit("roomJoined", roomInfo(room));
-        io.to(roomId).emit("playerJoined", getJoinInfo());
+        io.to(roomId).emit("playerJoined", joinInfo());
         console.log(`Player ${socket.id} joined room ${roomId}`);
     });
 
     // LEAVE Room
     socket.on("leaveRoom", () => {
-        console.log(`Player : ${socket.id} Leaving Room : ${socket.currentRoomId}`);
-        leaveRoom();
+        console.log(`Player : ${socket.id} Leaving Room : ${socket.gameRoom.id}`);
+        leaveGameRoom();
     });
 
     // SET Username Notification
@@ -113,12 +112,12 @@ io.on("connection", (socket) => {
         };
 
         // Send Message to all players in the room
-        io.to(socket.currentRoomId).emit("chatMessage", chatMessageInfo);
-        //console.log(`Message from ${socket.id} in room ${socket.currentRoomId}: ${message}`);
+        io.to(socket.gameRoom.id).emit("chatMessage", chatMessageInfo);
+        //console.log(`Message from ${socket.id} in room ${socket.gameRoom.id}: ${message}`);
     });
 
     // Increment Room score
-    socket.on("incrementScore", () => {
+    socket.on("incrementScore", (roll) => {
         const room = socket.gameRoom;
 
         if (!room) {
@@ -128,18 +127,25 @@ io.on("connection", (socket) => {
 
         if (actionLimiter(10)) return;
 
-        room.score++;
-        io.to(socket.currentRoomId).emit("scoreUpdate", room.score);
+        room.gameInfo.score += getInterpolatedInteger(room.gameInfo.scoreRoll[0], room.gameInfo.scoreRoll[1], roll);
+        io.to(socket.gameRoom.id).emit("scoreUpdate", room.gameInfo.score);
     });
 
     function joinRoom(roomId) {
         socket.join(roomId);
-        socket.currentRoomId = roomId;
         socket.gameRoom = rooms[roomId];
         //console.log("Rooms:", socket.rooms);
     }
 
-    function leaveRoom(roomId = socket.currentRoomId) {
+    function leaveGameRoom() {
+        if (socket.gameRoom) {
+            leaveRoom(socket.gameRoom.id);
+        } else {
+            console.log("Player is not in any room");
+        }
+    }
+
+    function leaveRoom(roomId) {
         // Check if the player is in the room
         if (!socket.rooms.has(roomId)) {
             console.log(`Player ${socket.id} is not in room ${roomId}`);
@@ -155,7 +161,7 @@ io.on("connection", (socket) => {
         }
 
         // Notify remaining players in the room
-        io.to(roomId).emit("playerLeft", getJoinInfo());
+        io.to(roomId).emit("playerLeft", joinInfo());
 
         console.log(`Player ${socket.id} removed from room ${roomId}`);
 
@@ -166,13 +172,13 @@ io.on("connection", (socket) => {
         }
 
         socket.leave(roomId);
-        socket.currentRoomId = null;
+        socket.gameRoom.id = null;
         socket.gameRoom = null;
     }
 
     function kickPlayer() {
         socket.emit("playerKicked", "Kicked for performing actions too quickly");
-        leaveRoom();
+        leaveGameRoom();
     }
 
     function actionLimiter(timeLimit = 1000) {
@@ -196,7 +202,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        if (socket.gameRoom.players.some((player) => player.name === username)) {
+        if (socket.gameRoom.players.some((player) => player.username === username)) {
             socket.emit("error", "Username is already taken in this room!");
             setUsername("DefaultUsername");
             return;
@@ -206,47 +212,44 @@ io.on("connection", (socket) => {
     }
 
     function setUsername(username) {
-        socket.username = username;
+        socket.roomPlayer.username = username;
         getRoomPlayer().name = username;
         socket.emit("usernameSet", username);
-        io.to(socket.currentRoomId).emit("playerListUpdate", socket.gameRoom.players.map((player) => player.name));
+        io.to(socket.gameRoom.id).emit("playerListUpdate", getPlayerNameList());
         console.log(`Username set for ${socket.id}: ${username}`);
-    }
-
-    // Helper function to create a "room player" object that stores multiple values
-    function createRoomPlayer() {
-        return {
-            id: socket.id,
-            name: socket.username,
-            ressources: 0,
-        };
-    }
-
-    // Create Room Info object -> provide safe access to Room data to Frontend
-    function roomInfo(room = socket.gameRoom) {
-        if (room) {
-            return {
-                id: socket.currentRoomId,
-                players: room.players.map((player) => ({
-                    name: player.name,
-                })),
-                score: room.score,
-            };
-        }
-
-        console.log("RoomInfo: Room param null");
-        return null;
     }
 
     function getRoomPlayer(room = socket.gameRoom) {
         return room.players.find((player) => player.id === socket.id);
     }
 
-    function getJoinInfo(room = socket.gameRoom) {
+    // RoomInfo For Frontend (safe)
+    function roomInfo(room = socket.gameRoom) {
+        if (!room) {
+            console.log("roomInfo: Room param null");
+            return null;
+        }
+
+        return new Room(room.id, room.players.map((player) => ({
+            username: player.username,
+        })), room.gameInfo);
+    }
+
+    // For Other Players, Smaller than RoomInfo
+    function joinInfo(room = socket.gameRoom) {
+        if (!room) {
+            console.log("joinInfo: Room param null");
+            return null;
+        }
+
         return {
             playerCount: room.players.length,
-            playersNameList: room.players.map((player) => player.name),
+            playersNameList: getPlayerNameList(),
         };
+    }
+
+    function getPlayerNameList() {
+        return socket.gameRoom.players.map((player) => player.username);
     }
 });
 
@@ -260,9 +263,56 @@ function getCurrentDateTime() {
     return `${date} ${time}`;
 }
 
+function getInterpolatedInteger(integer1, integer2, t) {
+    if (t < 0 || t > 1) {
+        throw new Error("Parameter 't' must be between 0 and 1");
+    }
+
+    // Interpolate between integer1 and integer2
+    const result = integer1 + (integer2 - integer1) * t;
+
+    // Return the nearest integer
+    return Math.round(result);
+}
+
 //#endregion
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
+class Room {
+    constructor(id, players = [], gameInfo = new GameInfo()) {
+        this.id = id;
+        this.players = players;
+        this.gameInfo = gameInfo;
+    }
+}
+
+// Backend Only
+class RoomPlayer {
+    constructor(id, username, ressources) {
+        this.id = id;
+        this.username = username;
+        this.ressources = ressources;
+    }
+}
+
+class GameInfo {
+    constructor() {
+        this.score = 0;
+        this.startTime = Date.now();
+        this.scoreRoll = [1, 2];
+        this.ressourcesGeneratorRoll = [1, 2, 10]; // X - Y Ressources every Z Score
+        this.automatonRoll = [0, 0, 10]; // X - Y Score Every Z Seconds
+        this.scoreMultiplier = 1; // Increase Score Generated by X%
+        this.critMachine = [0, 0]; // X Crit Chance For Y Crit Effect on Everything
+    }
+}
+
+class StateMachine {
+    constructor(initialState, transitions) {
+        this.state = initialState; // The current state
+    }
+}

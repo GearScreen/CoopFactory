@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function enterRoom(roomInfo) {
-    updatePlayerList(roomInfo.players.map((player) => player.name));
+    updatePlayerList(roomInfo.players.map((player) => player.username));
 
     // Hide the room creation/joining section
     document.getElementById("createRoomSection").style.display = "none";

@@ -1,8 +1,24 @@
+/* #region Default */
+
 button {
     font-family: "VT323", monospace;
     font-weight: 400;
     font-size: large;
     font-style: normal;
+    cursor: pointer; /* Ensure the pointer changes on hover */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+}
+
+button:hover {
+    background-color: black;
+    color: white;
+    border-color: white;
+}
+
+.bg_color_01:hover {
+    background-color: black;
+    color: red;
+    border-color: red;
 }
 
 input {
@@ -12,17 +28,9 @@ input {
     font-style: normal;
 }
 
-/* #region colors */
-
-.color_01 {
-    color: red;
-}
-
-.bg_color_01 {
-    background-color: red;
-}
-
 /* #endregion */
+
+/* #region Text */
 
 .font_01 {
     font-size: 2em;
@@ -44,6 +52,20 @@ input {
     font-size: large;
     font-style: normal;
 }
+
+/* #endregion */
+
+/* #region Colors */
+
+.color_01 {
+    color: red;
+}
+
+.bg_color_01 {
+    background-color: red;
+}
+
+/* #endregion */
 
 /* #region Display */
 
