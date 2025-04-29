@@ -5,8 +5,6 @@
     <title>CoopFactory</title>
     <link rel="icon" href="Favicon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="gears.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
@@ -21,7 +19,8 @@
     <div id="usernameSection">
         <h2 class="margin_01">Username : <span id="usernameDisplay"></span></h2>
         <input type="text" id="usernameInput" placeholder="Username">
-        <button onclick="setUsername()">Set Username</button>
+        <button onclick="inputUsername()">Set Username</button>
+        <button onclick="generateUsernameFromAPI()">Random</button>
         <div class="wh_01"></div>
     </div>
 
@@ -41,7 +40,7 @@
     <div id="gameSection" style="display: none;">
         <div id="GameRoomInfo" class="border_01 wh_03">
             <h2 class="margin_01">Room :</h2>
-            <button onclick="leaveRoom()" class="bg_color_01">Leave Room</button>
+            <button onclick="notifyLeaveRoom()" class="bg_color_01">Leave Room</button>
             <p>Room ID : <strong><span id="RoomIdDisplay"></span></strong> <button onclick="copyRoomIdToClipboard()">Copy</button></p>
             <p><strong><span id="playerCount">1</span>/5</strong> Players in room: <span id="playersList"></span></p>
         </div>
@@ -49,13 +48,13 @@
             <h2 class="margin_02">Factory :</h2>
             <p class="font_01">Score: <strong><span id="scoreDisplay">0</span></strong> &nbsp; &nbsp; &nbsp;
                 Ressources: <strong><span id="ressourcesDisplay">0</span></strong></p>
-            <button onclick="incrementScore()" class="wh_02 font_02 border_01"><strong>Generate Score</strong></button>
+            <button id="incrementScoreButton" class="wh_02 font_02 border_01"><strong>Generate Score</strong></button>
             <div class="wh_01"></div>
             <div class="grid_01">
-                <button onclick="incrementScore()" class="wh_04 font_02"><strong>Ressource Generator</strong></button>
-                <button onclick="incrementScore()" class="wh_04 font_02"><strong>Score Generator</strong></button>
-                <button onclick="incrementScore()" class="wh_04 font_02"><strong>Crit Machine</strong></button>
-                <button onclick="incrementScore()" class="wh_04 font_02"><strong>Laborer</strong></button>
+                <button onclick="" class="wh_04 font_02"><strong>Ressource Generator</strong></button>
+                <button onclick="" class="wh_04 font_02"><strong>Worker</strong></button>
+                <button onclick="" class="wh_04 font_02"><strong>Score Generator</strong></button>
+                <button onclick="" class="wh_04 font_02"><strong>Crit Machine</strong></button>
             </div>
             <div class="wh_01"></div>
         </div>
@@ -68,6 +67,11 @@
             <div class="wh_01"></div>
         </div>
     </div>
+
+    <script src="gameManager.js"></script>
+    <script src="utils.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="gears.js"></script>
 </body>
 
 </html>
