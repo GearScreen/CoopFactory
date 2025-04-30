@@ -26,6 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+var test1 = function() {
+    console.log("Test1");
+}
+
+var test2 = function() {
+    console.log("Test2");
+}
+
 function enterRoom(roomInfo) {
     updatePlayerList(roomInfo.players.map((player) => player.username));
 
