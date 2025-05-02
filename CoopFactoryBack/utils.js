@@ -22,7 +22,7 @@ class Action {
     constructor(onConstruct) {
         this.subscribers = [];
 
-        onConstruct(this);
+        if (onConstruct) onConstruct(this);
     }
 
     // Add function to the action
@@ -38,8 +38,8 @@ class Action {
     }
 
     // Invoke all functions
-    invoke() {
-        if (this.subscribers) this.subscribers.forEach(fn => fn());
+    invoke(...args) {
+        if (this.subscribers) this.subscribers.forEach(fn => fn(args));
     }
 }
 

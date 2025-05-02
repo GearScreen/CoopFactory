@@ -4,7 +4,7 @@ const socketIo = require("socket.io");
 const cors = require("cors");
 
 // Import Custom Modules
-const { Room, RoomPlayer, GameInfo } = require("./gameRoom");
+const { GameRoom, RoomPlayer, GameInfo } = require("./gameManager");
 const { StateMachine, State, MultiState } = require("./stateMachine");
 const { getCurrentDateTime, getInterpolatedInteger } = require("./utils");
 
@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        rooms[roomId] = new Room(roomId, [socket.roomPlayer]);
+        rooms[roomId] = new GameRoom(roomId, [socket.roomPlayer]);
         joinRoom(roomId);
 
         trySetUsername(playerUsername);
@@ -81,7 +81,6 @@ io.on("connection", (socket) => {
 
     // LEAVE Room
     socket.on("leaveRoom", () => {
-        console.log(`Player : ${socket.id} Leaving Room : ${socket.gameRoom.id}`);
         leaveGameRoom();
     });
 
@@ -132,9 +131,12 @@ io.on("connection", (socket) => {
 
         if (actionLimiter(10)) return;
 
-        room.gameInfo.score += getInterpolatedInteger(room.gameInfo.scoreRoll[0], room.gameInfo.scoreRoll[1], roll);
-        io.to(socket.gameRoom.id).emit("scoreUpdate", room.gameInfo.score);
-        room.incrementAction.invoke(); // Increment Event
+        const scoreIncrement = getInterpolatedInteger(room.ressourcesGeneratorRoll[0], room.ressourcesGeneratorRoll[1], roll);
+
+        room.incrementAction.invoke(room.score, scoreIncrement); // Increment Event
+
+        room.score += scoreIncrement;
+        io.to(socket.gameRoom.id).emit("scoreUpdate", room.score);
     });
 
     function joinRoom(roomId) {
@@ -144,6 +146,12 @@ io.on("connection", (socket) => {
     }
 
     function leaveGameRoom() {
+        if (!socket.gameRoom) {
+            console.log(`Player ${socket.id} is not in a room`);
+            return;
+        }
+
+        console.log(`Player : ${socket.id} Leaving Room : ${socket.gameRoom.id}`);
         leaveRoom(socket.gameRoom.id);
     }
 
@@ -198,12 +206,14 @@ io.on("connection", (socket) => {
     function trySetUsername(username) {
         console.log("Trying to set username:", username);
 
+        // Check if the username is valid
         if (!username || username.length > 20) {
             socket.emit("error", "Username is too long or empty");
             setUsername("DefaultUsername");
             return;
         }
 
+        // Check if the username is already taken in the room
         if (socket.gameRoom.players.some((player) => player.username === username)) {
             socket.emit("error", "Username is already taken in this room!");
             setUsername("DefaultUsername");
@@ -217,7 +227,7 @@ io.on("connection", (socket) => {
         socket.roomPlayer.username = username;
         getRoomPlayer().name = username;
         socket.emit("usernameSet", username);
-        io.to(socket.gameRoom.id).emit("playerListUpdate", getPlayerNameList());
+        io.to(socket.gameRoom.id).emit("playerListUpdate", getPlayersNameList());
         console.log(`Username set for ${socket.id}: ${username}`);
     }
 
@@ -232,9 +242,7 @@ io.on("connection", (socket) => {
             return null;
         }
 
-        return new Room(room.id, room.players.map((player) => ({
-            username: player.username,
-        })), room.gameInfo);
+        return new GameInfo(room.id, getPlayersInfoFront(room));
     }
 
     // For Other Players, Smaller than RoomInfo
@@ -246,12 +254,18 @@ io.on("connection", (socket) => {
 
         return {
             playerCount: room.players.length,
-            playersNameList: getPlayerNameList(),
+            playersNameList: getPlayersNameList(room),
         };
     }
 
-    function getPlayerNameList() {
-        return socket.gameRoom.players.map((player) => player.username);
+    function getPlayersNameList(room = socket.gameRoom) {
+        return room.players.map((player) => player.username);
+    }
+
+    function getPlayersInfoFront(room = socket.gameRoom) {
+        return room.players.map((player) => ({
+            username: player.username,
+        }));
     }
 });
 

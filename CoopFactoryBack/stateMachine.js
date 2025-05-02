@@ -30,25 +30,25 @@ class State {
 }
 
 class MultiState extends State {
-    constructor(name, states) {
+    constructor(name, states = []) {
         super(name);
         this.states = states;
 
         this.onEnter = () => {
             for (const state of this.states) {
-                if (state.onEnter) state.onEnter();
+                if (state?.onEnter) state.onEnter();
             }
         }
 
         this.update = () => {
             for (const state of this.states) {
-                if (state.update) state.update();
+                if (state?.update) state.update();
             }
         }
 
         this.onExit = () => {
             for (const state of this.states) {
-                if (state.onExit) state.onExit();
+                if (state?.onExit) state.onExit();
             }
         }
     }

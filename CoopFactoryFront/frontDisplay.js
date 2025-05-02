@@ -1,5 +1,14 @@
 // When DOM Has Finished Loading
 document.addEventListener("DOMContentLoaded", () => {
+    const t = (args) => test1(args[0]);
+
+    action = new Action((action) => action.add(t));
+    action.invoke("Message1");
+    action.remove(t);
+    console.log("Action Removed");
+    action.invoke("Message2");
+
+
     generateUsernameFromAPI();
 
     // Generate Score Button
@@ -8,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const roll = Math.random();
             socket.emit("incrementScore", roll);
         }
-    
+
         // Attach incrementScore to the button only
         document.getElementById("incrementScoreButton").addEventListener("click", incrementScore);
     })();
@@ -26,12 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-var test1 = function() {
-    console.log("Test1");
-}
-
-var test2 = function() {
-    console.log("Test2");
+function test1(message) {
+    console.log("Test1:", message);
 }
 
 function enterRoom(roomInfo) {

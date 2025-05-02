@@ -1,3 +1,5 @@
+// #region Username
+
 function generateRandomUsername() {
     const adjectives = ["Swift", "Brave", "Clever", "Mighty", "Noble", "Quick", "Sharp", "Witty"];
     const nouns = ["Eagle", "Tiger", "Wolf", "Falcon", "Lion", "Panther", "Hawk", "Bear"];
@@ -22,6 +24,8 @@ function get_Random_Username_From_API(onComplete)
             onComplete(username);
         });
 }
+
+// #endregion Username
 
 function fetchDataFromApi(endpoint, onComplete) {
     fetch(endpoint)
@@ -79,4 +83,29 @@ function showNotification(message, isError = false) {
             }
         }, 50);
     }, 2000);
+}
+
+class Action {
+    constructor(onConstruct) {
+        this.subscribers = [];
+
+        onConstruct(this);
+    }
+
+    // Add function to the action
+    add(fn) {
+        this.subscribers.push(fn);
+        return this; // Allow chaining
+    }
+
+    // Remove function
+    remove(fn) {
+        this.subscribers = this.subscribers.filter(f => f !== fn);
+        return this;
+    }
+
+    // Invoke all functions
+    invoke(...args) {
+        if (this.subscribers) this.subscribers.forEach(fn => fn(args));
+    }
 }
