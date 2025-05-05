@@ -19,10 +19,17 @@ function getInterpolatedInteger(integer1, integer2, t) {
 }
 
 class Action {
-    constructor(onConstruct) {
+    constructor(name = "", addActions = []) {
+        this.name = name;
         this.subscribers = [];
 
-        if (onConstruct) onConstruct(this);
+        addActions.forEach(action => {
+            if (typeof action === "function") {
+                this.add(action);
+            } else {
+                console.error(`Action "${name}" - Invalid action: ${action}`);
+            }
+        });
     }
 
     // Add function to the action

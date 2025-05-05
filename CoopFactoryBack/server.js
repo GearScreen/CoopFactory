@@ -4,9 +4,9 @@ const socketIo = require("socket.io");
 const cors = require("cors");
 
 // Import Custom Modules
-const { GameRoom, RoomPlayer, GameInfo } = require("./gameManager");
+const { PlayerInfo, RoomPlayer, GameRoom, GameInfo } = require("./gameManager");
 const { StateMachine, State, MultiState } = require("./stateMachine");
-const { getCurrentDateTime, getInterpolatedInteger } = require("./utils");
+const { getCurrentDateTime, getInterpolatedInteger, Action } = require("./utils");
 
 const app = express();
 app.use(cors()); // Allow cross-origin requests
@@ -26,9 +26,9 @@ const rooms = {};
 io.on("connection", (socket) => {
     console.log("New player connected:", socket.id);
 
-    // Variables for each Socket (player)
+    // VARs for each Socket (player)
     socket.gameRoom = null;
-    socket.roomPlayer = new RoomPlayer(socket.id, "Default", 0); // Infos about socket's player representation
+    socket.playerInfo = new PlayerInfo(socket.id, "Default"); // Infos about socket's player representation
     socket.lastActionTime = Date.now();
 
     // DISCONNECT
@@ -44,7 +44,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        rooms[roomId] = new GameRoom(roomId, [socket.roomPlayer]);
+        rooms[roomId] = generateGameRoom(roomId, [generateRoomPlayer()]);
         joinRoom(roomId);
 
         trySetUsername(playerUsername);
@@ -54,21 +54,33 @@ io.on("connection", (socket) => {
         console.log(`Room ${roomId} created by ${socket.id}`);
     });
 
+    function generateGameRoom(roomId, players = []) {
+        return new GameRoom(roomId, players,
+            new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
+            new Action("Score Increment", [emitScoreUpdate]), // Score update on Score increment Event
+            new Action("Ressources Increment", [emitRessourcesUpdate]),
+            new Action("Ressources Deduct", [(args) => {
+                if (isRoomPlayer(args[0])) emitRessourcesUpdate();
+            }]),
+            new Action("Upgrade: RessourcesGenerator", [(args) => emitRessourcesGeneratorUpgrade(args[0])]),
+        );
+    }
+
     // JOIN Room
     socket.on("joinRoom", (roomId, playerUsername) => {
         const room = rooms[roomId];
 
         if (!room) {
-            socket.emit("error", "Room does not exist!");
+            socket.emit("error", "Room does not exist");
             return;
         }
 
         if (room.players.length >= 4) {
-            socket.emit("error", "Room is full!");
+            socket.emit("error", "Room is full");
             return;
         }
 
-        room.players.push(socket.roomPlayer);
+        room.players.push(generateRoomPlayer());
         joinRoom(roomId);
 
         trySetUsername(playerUsername);
@@ -120,6 +132,10 @@ io.on("connection", (socket) => {
         //console.log(`Message from ${socket.id} in room ${socket.gameRoom.id}: ${message}`);
     });
 
+    socket.on("getPlayerInfo", () => {
+        socket.emit("callBackPlayerInfo", getPlayerInfoFront(getRoomPlayer()));
+    })
+
     // Increment Room score
     socket.on("incrementScore", (roll) => {
         const room = socket.gameRoom;
@@ -131,13 +147,27 @@ io.on("connection", (socket) => {
 
         if (actionLimiter(10)) return;
 
-        const scoreIncrement = getInterpolatedInteger(room.ressourcesGeneratorRoll[0], room.ressourcesGeneratorRoll[1], roll);
-
-        room.incrementAction.invoke(room.score, scoreIncrement); // Increment Event
-
-        room.score += scoreIncrement;
-        io.to(socket.gameRoom.id).emit("scoreUpdate", room.score);
+        room.click(roll);
     });
+
+    socket.on("upgradeRessourcesGenerator", () => {
+        const room = socket.gameRoom;
+
+        if (!room) {
+            socket.emit("error", "Not in a room");
+            return;
+        }
+
+        if (actionLimiter(10)) return;
+
+        // Upgrade the ressources generator
+        room.tryUpgradeRessourcesGenerator(getRoomPlayer());
+    });
+
+    // ROOM
+    function generateRoomPlayer() {
+        return new RoomPlayer(socket.id, socket.playerInfo.username);
+    }
 
     function joinRoom(roomId) {
         socket.join(roomId);
@@ -148,17 +178,6 @@ io.on("connection", (socket) => {
     function leaveGameRoom() {
         if (!socket.gameRoom) {
             console.log(`Player ${socket.id} is not in a room`);
-            return;
-        }
-
-        console.log(`Player : ${socket.id} Leaving Room : ${socket.gameRoom.id}`);
-        leaveRoom(socket.gameRoom.id);
-    }
-
-    function leaveRoom(roomId) {
-        // Check if the player is in the room
-        if (!socket.rooms.has(roomId)) {
-            console.log(`Player ${socket.id} is not in room ${roomId}`);
             return;
         }
 
@@ -181,9 +200,19 @@ io.on("connection", (socket) => {
             console.log(`Room ${roomId} deleted (empty)`);
         }
 
+        console.log(`Player : ${socket.id} Leaving Room : ${room.id}`);
+        leaveRoom(room.id);
+        room = null;
+    }
+
+    function leaveRoom(roomId) {
+        // Check if the player is in the room
+        if (!socket.rooms.has(roomId)) {
+            console.log(`Player ${socket.id} is not in room ${roomId}`);
+            return;
+        }
+
         socket.leave(roomId);
-        socket.gameRoom.id = null;
-        socket.gameRoom = null;
     }
 
     function kickPlayer(reason) {
@@ -201,38 +230,6 @@ io.on("connection", (socket) => {
         socket.lastActionTime = now;
 
         return false;
-    }
-
-    function trySetUsername(username) {
-        console.log("Trying to set username:", username);
-
-        // Check if the username is valid
-        if (!username || username.length > 20) {
-            socket.emit("error", "Username is too long or empty");
-            setUsername("DefaultUsername");
-            return;
-        }
-
-        // Check if the username is already taken in the room
-        if (socket.gameRoom.players.some((player) => player.username === username)) {
-            socket.emit("error", "Username is already taken in this room!");
-            setUsername("DefaultUsername");
-            return;
-        }
-
-        setUsername(username);
-    }
-
-    function setUsername(username) {
-        socket.roomPlayer.username = username;
-        getRoomPlayer().name = username;
-        socket.emit("usernameSet", username);
-        io.to(socket.gameRoom.id).emit("playerListUpdate", getPlayersNameList());
-        console.log(`Username set for ${socket.id}: ${username}`);
-    }
-
-    function getRoomPlayer(room = socket.gameRoom) {
-        return room.players.find((player) => player.id === socket.id);
     }
 
     // RoomInfo For Frontend (safe)
@@ -262,10 +259,71 @@ io.on("connection", (socket) => {
         return room.players.map((player) => player.username);
     }
 
+    // PLAYER
+    function sendDisplayMessage(message, error) {
+        socket.emit("displayMessage", message, error);
+    }
+
+    function trySetUsername(username) {
+        console.log("Trying to set username:", username);
+
+        // Check if the username is valid
+        if (!username || username.length > 20) {
+            socket.emit("error", "Username is too long or empty");
+            setUsername("DefaultUsername");
+            return;
+        }
+
+        // Check if the username is already taken in the room
+        if (socket.gameRoom.players.some((player) => player.username === username)) {
+            socket.emit("error", "Username is already taken in this room!");
+            setUsername("DefaultUsername");
+            return;
+        }
+
+        setUsername(username);
+    }
+
+    function setUsername(username) {
+        socket.playerInfo.username = username;
+        getRoomPlayer().username = username;
+
+        socket.emit("usernameSet", username);
+        io.to(socket.gameRoom.id).emit("playerListUpdate", getPlayersNameList());
+        console.log(`Username set for ${socket.id}: ${username}`);
+    }
+
+    function getRoomPlayer(room = socket.gameRoom) {
+        return room.players.find((player) => player.id === socket.id);
+    }
+
+    function isRoomPlayer(player) {
+        return player.id == socket.id;
+    }
+
     function getPlayersInfoFront(room = socket.gameRoom) {
-        return room.players.map((player) => ({
+        return room.players.map((player) => getPlayerInfoFront(player));
+    }
+
+    function getPlayerInfoFront(player) {
+        return {
             username: player.username,
-        }));
+            ressources: player.ressources
+        };
+    }
+
+    // EMIT
+    function emitScoreUpdate() {
+        io.to(socket.gameRoom.id).emit("scoreUpdate", socket.gameRoom.score);
+    }
+
+    function emitRessourcesUpdate() {
+        socket.emit("ressourcesUpdate", getRoomPlayer().ressources);
+        //io.to(socket.gameRoom.id).emit("ressourcesUpdate");
+    }
+
+    function emitRessourcesGeneratorUpgrade(ressourcesGeneratorInfos) {
+        io.to(socket.gameRoom.id).emit("ressourcesGeneratorUpgrade", ressourcesGeneratorInfos);
     }
 });
 

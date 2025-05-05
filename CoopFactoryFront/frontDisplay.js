@@ -1,14 +1,5 @@
 // When DOM Has Finished Loading
 document.addEventListener("DOMContentLoaded", () => {
-    const t = (args) => test1(args[0]);
-
-    action = new Action((action) => action.add(t));
-    action.invoke("Message1");
-    action.remove(t);
-    console.log("Action Removed");
-    action.invoke("Message2");
-
-
     generateUsernameFromAPI();
 
     // Generate Score Button
@@ -35,10 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-function test1(message) {
-    console.log("Test1:", message);
-}
-
+// ROOM
 function enterRoom(roomInfo) {
     updatePlayerList(roomInfo.players.map((player) => player.username));
 
@@ -58,6 +46,7 @@ function leaveRoom() {
     document.getElementById("joinRoomSection").style.display = "block";
 }
 
+// USERNAME
 function setUsername(username) {
     currentUsername = username;
 
@@ -99,10 +88,29 @@ function updatePlayerList(playersNameList) {
     playerList.innerHTML = pList;
 }
 
+// GAME
 function updateScoreDisplay(score) {
     document.getElementById("scoreDisplay").textContent = score;
 }
 
+function updateRessourcesDisplay(ressources) {
+    document.getElementById("ressourcesDisplay").textContent = ressources;
+}
+
 function updatePlayerCount(playerCount) {
     document.getElementById("playerCount").textContent = playerCount;
+}
+
+function rollDisplay(roll1, roll2) {
+    return "(" + roll1 + " - " + roll2 + ")";
+}
+
+function updateRessourcesGeneratorDisplay(upgradeCost, upgradeNbr) {
+    document.getElementById("RessourceGenerator_UpgradeCost").textContent = upgradeCost;
+    document.getElementById("RessourceGenerator_UpgradeNbr").textContent = upgradeNbr;
+}
+
+function updateRessourcesGeneratorEffectDisplay(roll1, roll2, scoreThreshold) {
+    document.getElementById("RessourceGenerator_Effect_01").textContent = rollDisplay(roll1, roll2);
+    document.getElementById("RessourceGenerator_Effect_02").textContent = scoreThreshold;
 }

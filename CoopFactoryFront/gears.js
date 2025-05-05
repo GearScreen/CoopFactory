@@ -31,10 +31,21 @@ socket.on("roomJoined", (roomInfo) => {
     updateScoreDisplay(roomInfo.gameInfo.score);
 });
 
+// LEAVE Room
 function notifyLeaveRoom() {
     socket.emit("leaveRoom");
     leaveRoom();
 }
+
+// PLAYER INFO
+function getPlayerInfo() {
+    socket.emit("getPlayerInfo");
+}
+
+socket.on("callBackPlayerInfo", (playerInfos) => {
+    console.log("Player Info:", playerInfos.username, playerInfos.ressources);
+    updateRessourcesDisplay();
+});
 
 // SET Username
 function notifySetUsername(username) {
@@ -46,6 +57,7 @@ socket.on("usernameSet", (username) => {
     console.log("Username set:", username);
 });
 
+// CHAT
 function sendChatMessage() {
     const chatInput = document.getElementById("chatInput");
     const message = chatInput.value;
@@ -56,8 +68,28 @@ function sendChatMessage() {
     }
 }
 
+// UPGRADES
+function askRessourcesGeneratorUpgrade() {
+    socket.emit("upgradeRessourcesGenerator");
+}
+
 //#region Socket General Event listeners
 
+socket.on("disconnect", () => {
+    console.log("Disconnected from server");
+    showNotification("Disconnected from server", true);
+    leaveRoom();
+});
+
+socket.on("error", (message) => {
+    alert(message);
+});
+
+socket.on("displayMessage", (message, error) => {
+    showNotification(message, error);
+});
+
+// GAME
 socket.on("playerJoined", (joinInfo) => {
     updatePlayerCount(joinInfo.playerCount);
     updatePlayerList(joinInfo.playersNameList);
@@ -79,10 +111,6 @@ socket.on("playerListUpdate", (playersNameList) => {
     updatePlayerList(playersNameList);
 });
 
-socket.on("scoreUpdate", (newScore) => {
-    updateScoreDisplay(newScore);
-});
-
 socket.on("chatMessage", (chatMessageInfo) => {
     //console.log("Chat message received:", chatMessageInfo);
     const chatBox = document.getElementById("chatBox");
@@ -92,13 +120,18 @@ socket.on("chatMessage", (chatMessageInfo) => {
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
 });
 
-socket.on("error", (message) => {
-    alert(message);
+socket.on("scoreUpdate", (newScore) => {
+    updateScoreDisplay(newScore);
 });
 
-socket.on("disconnect", () => {
-    console.log("Disconnected from server");
-    showNotification("Disconnected from server", true);
+socket.on("ressourcesUpdate", (newResources) => {
+    updateRessourcesDisplay(newResources);
+});
+
+socket.on("ressourcesGeneratorUpgrade", (ressourcesGeneratorInfos) => {
+    updateRessourcesGeneratorDisplay(ressourcesGeneratorInfos.upgradeCost, ressourcesGeneratorInfos.nbrOfUpgrades);
+    const gameValues = ressourcesGeneratorInfos.gameValues;
+    updateRessourcesGeneratorEffectDisplay(gameValues[0], gameValues[1], gameValues[2]);
 });
 
 //#endregion
