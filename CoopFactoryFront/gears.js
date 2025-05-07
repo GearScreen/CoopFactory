@@ -28,7 +28,7 @@ function joinRoom() {
 socket.on("roomJoined", (roomInfo) => {
     //console.log("Room joined:", roomInfo);
     enterRoom(roomInfo);
-    updateScoreDisplay(roomInfo.gameInfo.score);
+    updateScoreDisplay(roomInfo.score);
 });
 
 // LEAVE Room
@@ -38,14 +38,38 @@ function notifyLeaveRoom() {
 }
 
 // PLAYER INFO
-function getPlayerInfo() {
-    socket.emit("getPlayerInfo");
+async function fetchPlayerInfo() {
+    return new Promise((resolve, reject) => {
+        // Emit the "getPlayerInfo" event
+        socket.emit("getPlayerInfo");
+
+        // Listen for the "callBackPlayerInfo" event
+        socket.once("callBackPlayerInfo", (playerInfos) => {
+            if (playerInfos) {
+                resolve(playerInfos); // Resolve the promise with playerInfos
+            } else {
+                reject(new Error("Failed to fetch player info"));
+            }
+        });
+
+        // Optional: Add a timeout to reject if no response is received
+        setTimeout(() => {
+            reject(new Error("Timeout: No response from server"));
+        }, 5000); // 5 seconds timeout
+    });
 }
 
-socket.on("callBackPlayerInfo", (playerInfos) => {
-    console.log("Player Info:", playerInfos.username, playerInfos.ressources);
-    updateRessourcesDisplay();
-});
+// Example usage
+async function handlePlayerInfo(onComplete) {
+    try {
+        const playerInfos = await fetchPlayerInfo();
+        //console.log("Player Info:", playerInfos);
+        //console.log(`Player Infos: Username: ${playerInfos.username} Ressources: ${playerInfos.ressources}`);
+        onComplete(playerInfos);
+    } catch (error) {
+        console.error("Error fetching player info:", error.message);
+    }
+}
 
 // SET Username
 function notifySetUsername(username) {
@@ -69,8 +93,8 @@ function sendChatMessage() {
 }
 
 // UPGRADES
-function askRessourcesGeneratorUpgrade() {
-    socket.emit("upgradeRessourcesGenerator");
+function askFactoryPartUpgrade(partNbr) {
+    socket.emit("upgradeFactoryPart", partNbr);
 }
 
 //#region Socket General Event listeners
@@ -124,14 +148,32 @@ socket.on("scoreUpdate", (newScore) => {
     updateScoreDisplay(newScore);
 });
 
-socket.on("ressourcesUpdate", (newResources) => {
-    updateRessourcesDisplay(newResources);
+socket.on("ressourcesUpdate", () => {
+    handlePlayerInfo((playerInfos) => updateRessourcesDisplay(playerInfos.ressources));
+});
+
+socket.on("scoreAssemblerUpgrade", (scoreAssemblerInfos) => {
+    //console.log("Score Assembler Update Display info: ", scoreAssemblerInfos);
+    const gameValues = scoreAssemblerInfos.gameValues;
+
+    updateDisplayById([
+        updateElem("ScoreAssembler_UpgradeCost", scoreAssemblerInfos.upgradeCost),
+        updateElem("ScoreAssembler_UpgradeNbr", scoreAssemblerInfos.nbrOfUpgrades),
+        updateElem("ScoreAssembler_Roll_01", rollDisplay(gameValues[0], gameValues[1])),
+        updateElem("ScoreAssembler_Roll_02", rollDisplay(gameValues[0], gameValues[1]))
+    ]);
 });
 
 socket.on("ressourcesGeneratorUpgrade", (ressourcesGeneratorInfos) => {
-    updateRessourcesGeneratorDisplay(ressourcesGeneratorInfos.upgradeCost, ressourcesGeneratorInfos.nbrOfUpgrades);
+    console.log("ressourcesGenerator Update Display info: ", ressourcesGeneratorInfos);
     const gameValues = ressourcesGeneratorInfos.gameValues;
-    updateRessourcesGeneratorEffectDisplay(gameValues[0], gameValues[1], gameValues[2]);
+
+    updateDisplayById([
+        updateElem("RessourceGenerator_UpgradeCost", ressourcesGeneratorInfos.upgradeCost),
+        updateElem("RessourceGenerator_UpgradeNbr", ressourcesGeneratorInfos.nbrOfUpgrades),
+        updateElem("RessourceGenerator_Effect_01", rollDisplay(gameValues[0], gameValues[1])),
+        updateElem("RessourceGenerator_Effect_02", gameValues[2])
+    ]);
 });
 
 //#endregion

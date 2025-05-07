@@ -64,6 +64,7 @@ function inputUsername() {
 
     if (usernameInput) {
         setUsername(usernameInput.value);
+        notifySetUsername(currentUsername);
         usernameInput.value = ""; // Clear the input field
     }
 }
@@ -105,12 +106,12 @@ function rollDisplay(roll1, roll2) {
     return "(" + roll1 + " - " + roll2 + ")";
 }
 
-function updateRessourcesGeneratorDisplay(upgradeCost, upgradeNbr) {
-    document.getElementById("RessourceGenerator_UpgradeCost").textContent = upgradeCost;
-    document.getElementById("RessourceGenerator_UpgradeNbr").textContent = upgradeNbr;
+function updateDisplayById(updates = []) {
+    updates.forEach((update) => {
+        document.getElementById(update.id).textContent = update.text;
+    });
 }
 
-function updateRessourcesGeneratorEffectDisplay(roll1, roll2, scoreThreshold) {
-    document.getElementById("RessourceGenerator_Effect_01").textContent = rollDisplay(roll1, roll2);
-    document.getElementById("RessourceGenerator_Effect_02").textContent = scoreThreshold;
+function updateElem(id, text) {
+    return {id: id, text: text};
 }

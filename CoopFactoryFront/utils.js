@@ -86,10 +86,17 @@ function showNotification(message, isError = false) {
 }
 
 class Action {
-    constructor(onConstruct) {
+    constructor(name = "", addActions = []) {
+        this.name = name;
         this.subscribers = [];
 
-        onConstruct(this);
+        addActions.forEach(action => {
+            if (typeof action === "function") {
+                this.add(action);
+            } else {
+                console.error(`Action "${name}" - Invalid action: ${action}`);
+            }
+        });
     }
 
     // Add function to the action
