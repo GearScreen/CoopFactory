@@ -5,7 +5,7 @@ const cors = require("cors");
 
 // Import Custom Modules
 const { PlayerInfo, RoomPlayer, GameRoom, GameInfo } = require("./gameManager");
-const { getCurrentDateTime, getInterpolatedInteger, Action } = require("./utils");
+const { getCurrentDateTime, cloneWithoutCircularReferences, Action } = require("./utils");
 
 const app = express();
 app.use(cors()); // Allow cross-origin requests
@@ -69,8 +69,6 @@ io.on("connection", (socket) => {
                 const player = args[0];
                 emitRessourcesUpdate(player.id);
             }]),
-            new Action("Upgrade: ScoreAssembler", [(args) => emitScoreAssmblerUpgrade(args[0])]),
-            new Action("Upgrade: RessourcesGenerator", [(args) => emitRessourcesGeneratorUpgrade(args[0])]),
             new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(args[0], args[1])]) // args[0] = emitMessage, args[1] = PartInfo
         );
     }
@@ -149,8 +147,7 @@ io.on("connection", (socket) => {
 
         if (actionLimiter(10)) return;
 
-        //room.tryUpgradeFactoryPart(getRoomPlayer(), partNbr);
-        room.tryUpgradeFactoryPart2(getRoomPlayer(), partNbr);
+        room.tryUpgradeFactoryPart(getRoomPlayer(), partNbr);
     });
 
     // ROOM
@@ -230,7 +227,10 @@ io.on("connection", (socket) => {
     function roomInfo(room = socket.gameRoom) {
         if (!checkRoom(room)) return;
 
-        return new GameInfo(room.id, getPlayersInfoFront(room));
+        const safeRoom =  new GameInfo(room.id, getPlayersInfoFront(room), room.score, room.gameTimer, room.scoreAssemblerinfos,
+        room.ressourcesGeneratorInfos, room.automatonInfos, room.critMachineInfo);
+
+        return safeRoom;
     }
 
     // For Other Players, Smaller than RoomInfo
@@ -307,14 +307,6 @@ io.on("connection", (socket) => {
 
     function emitRessourcesUpdate(id) {
         io.to(id).emit("ressourcesUpdate");
-    }
-
-    function emitScoreAssmblerUpgrade(scoreAssemblerInfos) {
-        io.to(socket.gameRoom.id).emit("scoreAssemblerUpgrade", scoreAssemblerInfos);
-    }
-
-    function emitRessourcesGeneratorUpgrade(ressourcesGeneratorInfos) {
-        io.to(socket.gameRoom.id).emit("ressourcesGeneratorUpgrade", ressourcesGeneratorInfos);
     }
 });
 

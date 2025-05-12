@@ -1,5 +1,5 @@
 const { StateMachine, State, MultiState } = require("./stateMachine");
-const { getInterpolatedInteger, Action } = require("./utils");
+const { getInterpolatedInteger, rollPercent, Action } = require("./utils");
 
 // PLAYER
 class PlayerInfo {
@@ -18,21 +18,22 @@ class RoomPlayer extends PlayerInfo {
 
 // GAME_ROOM
 class GameInfo {
-    constructor(id, players = []) {
+    constructor(id, players = [], score = 0, gameTimer = 0,
+        scoreAssemblerInfos = new ScoreAssemblerInfos(), ressourcesGeneratorInfos = new RessourcesGeneratorInfo(),
+        automatonInfos = new AutomatonInfo(), critMachineInfos = new CritMachineInfo()) {
         //GameRoom Info
         this.id = id;
         this.players = players;
 
         //Game Info
-        this.score = 0;
-        this.elapsedTime = 0;
-
-        this.critMachine = [0, 0];
+        this.score = score;
+        this.gameTimer = gameTimer;
 
         // Factory Parts Infos
-        this.scoreAssemblerInfos = new ScoreAssemblerInfos();
-        this.ressourcesGeneratorInfos = new RessourcesGeneratorInfo();
-        this.automatonInfo = new AutomatonInfo();
+        this.scoreAssemblerInfos = scoreAssemblerInfos;
+        this.ressourcesGeneratorInfos = ressourcesGeneratorInfos;
+        this.automatonInfos = automatonInfos;
+        this.critMachineInfos = critMachineInfos;
     }
 }
 
@@ -40,7 +41,6 @@ class GameRoom extends GameInfo {
     constructor(id, players = [],
         gameErrorAction = new Action("Game Error"), scoreIncrementAction = new Action("Increment: Score"),
         ressourcesIncrementAction = new Action("Increment: Ressources"), ressourcesDeductAction = new Action("Deduct: Ressources"),
-        scoreAssemblerUpgrade = new Action("Upgrade: ScoreAssembler"), ressourcesGeneratorUpgrade = new Action("Upgrade: RessourcesGenerator"),
         factoryPartUpgrade = new Action("FactoryPart Upgrade")) {
         super(id, players);
 
@@ -51,14 +51,17 @@ class GameRoom extends GameInfo {
 
         // Game Events
         this.gameErrorAction = gameErrorAction;
-        // Factory
+        // Factory Events
         this.clickAction = new Action("Click");
         this.scoreIncrementAction = scoreIncrementAction;
         this.ressourcesIncrementAction = ressourcesIncrementAction;
         this.ressourcesDeductAction = ressourcesDeductAction;
+
+        // Factory Mods
+        this.scoreIncrementMods = new Action("Score Increment Mods");
+        this.ressourcesIncrementMods = new Action("Ressources Increment Mods");
+
         // Factory Parts
-        this.scoreAssemblerUpgrade = scoreAssemblerUpgrade;
-        this.ressourcesGeneratorUpgrade = ressourcesGeneratorUpgrade;
         this.factoryPartUpgrade = factoryPartUpgrade;
 
         // State Machine
@@ -81,7 +84,7 @@ class GameRoom extends GameInfo {
 
     updateGameLogic = () => {
         // Count Game Time
-        this.elapsedTime += this.FRAME_INTERVAL;
+        this.gameTimer += this.FRAME_INTERVAL;
         //console.log("Time Count: ", this.elapsedTime);
 
         // Update the state machine
@@ -93,6 +96,7 @@ class GameRoom extends GameInfo {
         return new MultiState("MultiState", [
             new ScoreAssembler(this),
             new RessourcesGenerator(this),
+            new CritMachine(this),
         ]);
     }
 
@@ -102,18 +106,27 @@ class GameRoom extends GameInfo {
 
     // SCORE
     click(roll) {
+        //console.log("Click:", roll);
         this.clickAction.invoke(roll);
     }
 
-    incrementScore(scoreIncrement) {
+    incrementScore(scoreIncrementInput) {
         //console.log("Score Increment:", this.score, scoreIncrement);
+        var scoreIncrementObj = { value: scoreIncrementInput };
+        this.scoreIncrementMods.invoke(scoreIncrementObj); // Score Increment Mods
+        const scoreIncrement = scoreIncrementObj.value;
+
         this.score += scoreIncrement;
         this.scoreIncrementAction.invoke(this.score, scoreIncrement); // Trigger the increment action
     }
 
     // RESSOURCES
-    incrementRessourcesToPlayers(ressourcesIncrement) {
+    incrementRessourcesToPlayers(ressourcesIncrementInput) {
         //console.log("Adding ressources to players:", ressourcesIncrement);
+        var ressourcesIncrementObj = { value: ressourcesIncrementInput };
+        this.ressourcesIncrementMods.invoke(ressourcesIncrementObj); // Score Increment Mods
+        const ressourcesIncrement = ressourcesIncrementObj.value;
+
         // Add ressources to each player
         this.players.forEach((player) => {
             player.ressources += ressourcesIncrement;
@@ -127,29 +140,8 @@ class GameRoom extends GameInfo {
     }
 
     // FACTORY PARTS
-    tryUpgradeFactoryPart(player, partNbr) {
-        switch (partNbr) {
-            case 0:
-                room.tryUpgradeScoreAssembler(player);
-                break;
-            case 1:
-                room.tryUpgradeRessourcesGenerator(player);
-                break;
-        }
-    }
-
-    upgradeFactoryPartConditions(player, upgradeCost) {
-        if (upgradeCost > player.ressources) {
-            //console.log("Not enough ressources");
-            this.gameError("Not enough ressources");
-            return false;
-        }
-
-        return true
-    }
-
     //TODO : Move logic
-    tryUpgradeFactoryPart2(player, partNbr) {
+    tryUpgradeFactoryPart(player, partNbr) {
         var partInfo = null;
         var emitMessage = "";
         var additionalCondition = () => true;
@@ -165,8 +157,12 @@ class GameRoom extends GameInfo {
                 break;
             case 2:
                 partInfo = this.automatonInfo;
-                emitMessage = "AutomatonUpgrade";
+                emitMessage = "automatonUpgrade";
                 additionalCondition = () => partInfo.gameValues[0] < partInfo.gameValues[1]; // Max 20 Automaton (avoid burning server)
+                break;
+            case 3:
+                partInfo = this.critMachineInfo;
+                emitMessage = "critMachineUpgrade";
                 break;
         }
 
@@ -177,28 +173,7 @@ class GameRoom extends GameInfo {
         }
 
         partInfo.upgrade(this, player); // Upgrade part
-        this.factoryPartUpgrade.invoke(partInfo, emitMessage); // Trigger Upgrade Event
-    }
-
-    tryUpgradeScoreAssembler(player) {
-        if (!this.upgradeFactoryPartConditions(player, this.scoreAssemblerInfos.upgradeCost)) return;
-
-        this.scoreAssemblerInfos.upgrade(this, player); // Upgrade the Score Assembler
-        this.scoreAssemblerUpgrade.invoke(this.scoreAssemblerInfos);
-    }
-
-    tryUpgradeRessourcesGenerator(player) {
-        if (!this.upgradeFactoryPartConditions(player, this.ressourcesGeneratorInfos.upgradeCost)) return;
-
-        this.ressourcesGeneratorInfos.upgrade(this, player);
-        this.ressourcesGeneratorUpgrade.invoke(this.ressourcesGeneratorInfos);
-    }
-
-    tryUpgradeAutomaton(player) {
-        if (!this.upgradeFactoryPartConditions(player, this.automatonInfo.upgradeCost)) return;
-
-        this.automatonInfo.upgrade(this, player);
-        this.scoreAssemblerUpgrade.invoke(this.automatonInfo);
+        this.factoryPartUpgrade.invoke(emitMessage, partInfo); // Trigger Upgrade Event
     }
 }
 
@@ -211,6 +186,7 @@ class FactoryPartInfo {
         this.nbrOfUpgrades = nbrOfUpgrades;
 
         this.baseUpgradeCost = upgradeCost;
+        this.flatCostIncrease = 2; // The Higher this is the slower the pace in early
         this.costMultiplier = 1.2; // Every upgrade will multiply the cost by this value
     }
 
@@ -218,14 +194,18 @@ class FactoryPartInfo {
         gameRoom.deductRessourcesFromPlayer(player, this.upgradeCost);
         this.nbrOfUpgrades++;
         // Update Upgrade Cost (Rounded Down)
-        this.upgradeCost = Math.floor(this.baseUpgradeCost * (this.costMultiplier ** this.nbrOfUpgrades));
+        this.upgradeCost = this.upgradeCostFormula();
         console.log(`Player: ${player.username} Upgrading Factory Part: ${this.name}, NbrOfUpgrade: ${this.nbrOfUpgrades}, New Cost: ${this.upgradeCost}, PlayerRessources: ${player.ressources}`);
+    }
+
+    upgradeCostFormula() {
+        return Math.floor((this.baseUpgradeCost + this.flatCostIncrease) * (this.costMultiplier ** this.nbrOfUpgrades));
     }
 }
 
 class ScoreAssemblerInfos extends FactoryPartInfo {
     constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [1, 2]) {
-        super("ScoreAssemblerInfos", upgradeCost, nbrOfUpgrades);
+        super("ScoreAssembler", upgradeCost, nbrOfUpgrades);
         this.gameValues = gameValues; // Generate (1 - 2) Score On Click
     }
 
@@ -240,7 +220,7 @@ class ScoreAssemblerInfos extends FactoryPartInfo {
 
 class RessourcesGeneratorInfo extends FactoryPartInfo {
     constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [1, 2, 10]) {
-        super("Ressource Generator", upgradeCost, nbrOfUpgrades);
+        super("RessourceGenerator", upgradeCost, nbrOfUpgrades);
         this.gameValues = gameValues; // 1 - 2 Ressources every 10 Score
     }
 
@@ -252,15 +232,18 @@ class RessourcesGeneratorInfo extends FactoryPartInfo {
         this.gameValues[1] += 2;
 
         // Reduce Score Increment Needed (min 5) -> Math.min(2, 3, 1) returns 1
-        if (this.nbrOfUpgrades % 10 == 0 && this.gameValues[2] > 5) {
+        /* if (this.nbrOfUpgrades % 10 == 0 && this.gameValues[2] > 5) {
             this.gameValues[2] -= 1;
-        }
+        }*/
     }
 }
 
 class AutomatonInfo extends FactoryPartInfo {
-    constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [0, 20, 1, 1, 2]) {
-        super("AutomatonInfo", upgradeCost, nbrOfUpgrades);
+    constructor(upgradeCost = 20, nbrOfUpgrades = 0, gameValues = [0, 20, 1, 1, 2]) {
+        super("Automaton", upgradeCost, nbrOfUpgrades);
+        this.flatCostIncrease = 5;
+        this.costMultiplier = 2;
+
         this.gameValues = gameValues; // 0/20 Automaton, 1 Click Every (1 - 2) Seconds
     }
 
@@ -270,6 +253,20 @@ class AutomatonInfo extends FactoryPartInfo {
         // Add 1 Automaton
         this.gameValues[0] += 1;
         MultiState.getMultiState(gameRoom.stateMachine).addState(new Automaton(gameRoom));
+    }
+}
+
+class CritMachineInfo extends FactoryPartInfo {
+    constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [25, 0]) {
+        super("CritMachine", upgradeCost, nbrOfUpgrades);
+        this.gameValues = gameValues; // 25% Chance For 0% Effect on Score and Ressources Increments
+    }
+
+    upgrade(gameRoom, player) {
+        super.upgrade(gameRoom, player);
+
+        // Increase Rolls Values
+        this.gameValues[1] += 5;
     }
 }
 
@@ -352,7 +349,7 @@ class Automaton extends FactoryPart {
     constructor(gameRoom) {
         super("Automaton", gameRoom);
         this.actionHandleScoreIncrement = (args) => this.handleScoreIncrement(args[0]);
-        this.timeCount;
+        this.timeCount = 0;
         this.timeThreshold = this.getRandomTimeThreshold();
 
         this.onEnter = () => {
@@ -360,11 +357,13 @@ class Automaton extends FactoryPart {
         };
 
         this.update = () => {
+            //console.log("Automaton Update");
+
             // Count Time
             this.timeCount += gameRoom.FRAME_INTERVAL;
 
-            // Trigger the function every 1 second
-            if (this.timeCount >= timeThreshold) {
+            // Automaton Trigger every X sec
+            if (this.timeCount >= this.timeThreshold) {
                 this.automatonTrigger();
                 this.timeCount = 0; // Reset the timer
                 this.timeThreshold = this.getRandomTimeThreshold(); // Reroll Threshold
@@ -377,11 +376,46 @@ class Automaton extends FactoryPart {
     }
 
     automatonTrigger() {
-        this.gameRoom.click();
+        //console.log("Automaton Trigger:");
+        this.gameRoom.click(Math.random());
     }
 
     getRandomTimeThreshold() {
         return 1000 + Math.random() * 1000;
+    }
+}
+
+class CritMachine extends FactoryPart {
+    constructor(gameRoom) {
+        super("CritMachine", gameRoom);
+        this.actionHandle = (args) => this.critRoll(args[0]);
+
+        this.onEnter = () => {
+            //console.log("CritMachine : Enter")
+            // Add Crit
+            gameRoom.scoreIncrementMods.add(this.actionHandle);
+            gameRoom.ressourcesIncrementMods.add(this.actionHandle);
+        };
+
+        this.update = null;
+
+        this.onExit = () => {
+            //console.log("CritMachine : Exit")
+            // Remove Crit
+            gameRoom.scoreIncrementMods.remove(this.actionHandle);
+            gameRoom.ressourcesIncrementMods.remove(this.actionHandle);
+        }
+    }
+
+    critRoll(valueHolder) {
+        // crit
+        const critChance = this.gameRoom.critMachineInfos.gameValues[0];
+        const critEffect = this.gameRoom.critMachineInfos.gameValues[1];
+
+        if (rollPercent(critChance)) {
+            valueHolder.value *= 1 + (critEffect * .01);
+            //console.log("CRIT:", valueHolder.value);
+        }
     }
 }
 

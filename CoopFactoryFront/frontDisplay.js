@@ -37,6 +37,12 @@ function enterRoom(roomInfo) {
     //Display the game section
     document.getElementById("gameSection").style.display = "block";
     document.getElementById("RoomIdDisplay").textContent = roomInfo.id;
+
+    // Update Factory Parts Display
+    updateScoreAssemblerDisplay(roomInfo.scoreAssemblerInfos);
+    updateRessourcesGeneratorDisplay(roomInfo.ressourcesGeneratorInfos);
+    updateAutomatonDisplay(roomInfo.automatonInfos);
+    updateCritMachineDisplay(roomInfo.critMachineInfos);
 }
 
 function leaveRoom() {
@@ -90,12 +96,27 @@ function updatePlayerList(playersNameList) {
 }
 
 // GAME
+// Use Later
+function formatLargeNumber(number) {
+    if (number >= 1e9) {
+        return (number / 1e9).toFixed(1) + "B"; // Billions
+    } else if (number >= 1e6) {
+        return (number / 1e6).toFixed(1) + "M"; // Millions
+    } else if (number >= 1e3) {
+        return (number / 1e3).toFixed(1) + "K"; // Thousands
+    } else {
+        return number.toString(); // Less than 1,000
+    }
+}
+
 function updateScoreDisplay(score) {
-    document.getElementById("scoreDisplay").textContent = score;
+    const formattedScore = score.toLocaleString(); // Adds commas (e.g., 1,000,000)
+    document.getElementById("scoreDisplay").textContent = formattedScore;
 }
 
 function updateRessourcesDisplay(ressources) {
-    document.getElementById("ressourcesDisplay").textContent = ressources;
+    const formattedRessources = ressources.toLocaleString();
+    document.getElementById("ressourcesDisplay").textContent = formattedRessources;
 }
 
 function updatePlayerCount(playerCount) {
@@ -113,5 +134,64 @@ function updateDisplayById(updates = []) {
 }
 
 function updateElem(id, text) {
-    return {id: id, text: text};
+    return { id: id, text: text };
+}
+
+function updateScoreAssemblerDisplay(scoreAssemblerInfos) {
+    const gameValues = scoreAssemblerInfos.gameValues;
+
+    updateDisplayById([
+        updateElem("ScoreAssembler_UpgradeCost", scoreAssemblerInfos.upgradeCost),
+        updateElem("ScoreAssembler_UpgradeNbr", scoreAssemblerInfos.nbrOfUpgrades),
+        updateElem("ScoreAssembler_Roll_01", rollDisplay(gameValues[0], gameValues[1])),
+        updateElem("ScoreAssembler_Roll_02", rollDisplay(gameValues[0], gameValues[1]))
+    ]);
+}
+
+function updateRessourcesGeneratorDisplay(ressourcesGeneratorInfos) {
+    //console.log("ressourcesGenerator Update Display info: ", ressourcesGeneratorInfos);
+    const gameValues = ressourcesGeneratorInfos.gameValues;
+
+    updateDisplayById([
+        updateElem("RessourceGenerator_UpgradeCost", ressourcesGeneratorInfos.upgradeCost),
+        updateElem("RessourceGenerator_UpgradeNbr", ressourcesGeneratorInfos.nbrOfUpgrades),
+        updateElem("RessourceGenerator_Effect_01", rollDisplay(gameValues[0], gameValues[1])),
+        updateElem("RessourceGenerator_Effect_02", gameValues[2])
+    ]);
+}
+
+function updateAutomatonDisplay(automatonInfos) {
+    //console.log("Automaton Update Display info: ", automatonInfos);
+    const gameValues = automatonInfos.gameValues;
+
+    updateDisplayById([
+        updateElem("Automaton_UpgradeCost", automatonInfos.upgradeCost),
+        updateElem("Automaton_UpgradeNbr", automatonInfos.nbrOfUpgrades),
+        updateElem("Automaton_Effect_01", gameValues[0]),
+        updateElem("Automaton_Effect_02", rollDisplay(gameValues[3], gameValues[4]))
+    ]);
+}
+
+function updateCritMachineDisplay(critMachineInfos) {
+    const gameValues = critMachineInfos.gameValues;
+
+    updateDisplayById([
+        updateElem("CritMachine_UpgradeCost", critMachineInfos.upgradeCost),
+        updateElem("CritMachine_UpgradeNbr", critMachineInfos.nbrOfUpgrades),
+        updateElem("CritMachine_Effect_01", gameValues[0]),
+        updateElem("CritMachine_Effect_02", gameValues[1])
+    ]);
+}
+
+// TODO : FINISH -> updateDisplay Function for every Factory part
+function updateUpgradeDisplay(partInfo) {
+    console.log("Update Part Display info: ", partInfo);
+    const gameValues = partInfo.gameValues;
+
+    updateDisplayById([
+        updateElem(`${partInfo.name}_UpgradeCost`, partInfo.upgradeCost),
+        updateElem("RessourceGenerator_UpgradeNbr", partInfo.nbrOfUpgrades),
+        updateElem("RessourceGenerator_Effect_01", rollDisplay(gameValues[0], gameValues[1])),
+        updateElem("RessourceGenerator_Effect_02", gameValues[2])
+    ]);
 }

@@ -153,27 +153,19 @@ socket.on("ressourcesUpdate", () => {
 });
 
 socket.on("scoreAssemblerUpgrade", (scoreAssemblerInfos) => {
-    //console.log("Score Assembler Update Display info: ", scoreAssemblerInfos);
-    const gameValues = scoreAssemblerInfos.gameValues;
-
-    updateDisplayById([
-        updateElem("ScoreAssembler_UpgradeCost", scoreAssemblerInfos.upgradeCost),
-        updateElem("ScoreAssembler_UpgradeNbr", scoreAssemblerInfos.nbrOfUpgrades),
-        updateElem("ScoreAssembler_Roll_01", rollDisplay(gameValues[0], gameValues[1])),
-        updateElem("ScoreAssembler_Roll_02", rollDisplay(gameValues[0], gameValues[1]))
-    ]);
+    updateScoreAssemblerDisplay(scoreAssemblerInfos);
 });
 
 socket.on("ressourcesGeneratorUpgrade", (ressourcesGeneratorInfos) => {
-    console.log("ressourcesGenerator Update Display info: ", ressourcesGeneratorInfos);
-    const gameValues = ressourcesGeneratorInfos.gameValues;
+    updateRessourcesGeneratorDisplay(ressourcesGeneratorInfos);
+});
 
-    updateDisplayById([
-        updateElem("RessourceGenerator_UpgradeCost", ressourcesGeneratorInfos.upgradeCost),
-        updateElem("RessourceGenerator_UpgradeNbr", ressourcesGeneratorInfos.nbrOfUpgrades),
-        updateElem("RessourceGenerator_Effect_01", rollDisplay(gameValues[0], gameValues[1])),
-        updateElem("RessourceGenerator_Effect_02", gameValues[2])
-    ]);
+socket.on("automatonUpgrade", (automatonInfos) => {
+    updateAutomatonDisplay(automatonInfos);
+});
+
+socket.on("critMachineUpgrade", (critMachine) => {
+    updateCritMachineDisplay(critMachine);
 });
 
 //#endregion

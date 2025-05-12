@@ -18,6 +18,31 @@ function getInterpolatedInteger(integer1, integer2, t) {
     return Math.round(result);
 }
 
+function rollPercent(percentChanceToBeTrue) {
+    const roll = Math.random() * 101;
+
+    if (percentChanceToBeTrue >= roll) {
+        return true;
+    }
+
+    return false;
+}
+
+function cloneWithoutCircularReferences(obj) {
+    seen = new WeakSet();
+    return JSON.parse(
+        JSON.stringify(obj, (key, value) => {
+            if (typeof value === "object" && value !== null) {
+                if (seen.has(value)) {
+                    return undefined; // Ignore circular references
+                }
+                seen.add(value);
+            }
+            return value;
+        })
+    );
+}
+
 class Action {
     constructor(name = "", addActions = []) {
         this.name = name;
@@ -50,4 +75,4 @@ class Action {
     }
 }
 
-module.exports = { getCurrentDateTime, getInterpolatedInteger, Action };
+module.exports = { getCurrentDateTime, getInterpolatedInteger, rollPercent, cloneWithoutCircularReferences, Action };

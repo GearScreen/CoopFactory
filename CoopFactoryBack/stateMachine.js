@@ -61,7 +61,7 @@ class MultiState extends State {
     }
 
     static getMultiState(stateMachine) {
-        console.log("StateMachine State Name: ", stateMachine.state.constructor.name);
+        //console.log("StateMachine State Name: ", stateMachine.state.constructor.name);
 
         if (stateMachine.state.constructor.name != "MultiState") {
             console.log("(StateMachine) getMultiState -> Not a Multistate");
