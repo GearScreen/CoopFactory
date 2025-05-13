@@ -41,7 +41,7 @@ class GameRoom extends GameInfo {
     constructor(id, players = [],
         gameErrorAction = new Action("Game Error"), scoreIncrementAction = new Action("Increment: Score"),
         ressourcesIncrementAction = new Action("Increment: Ressources"), ressourcesDeductAction = new Action("Deduct: Ressources"),
-        factoryPartUpgrade = new Action("FactoryPart Upgrade")) {
+        factoryPartUpgrade = new Action("FactoryPart Upgrade"), automatonTriggerAction = new Action("Automaton Trigger")) {
         super(id, players);
 
         // Game Loop
@@ -56,6 +56,7 @@ class GameRoom extends GameInfo {
         this.scoreIncrementAction = scoreIncrementAction;
         this.ressourcesIncrementAction = ressourcesIncrementAction;
         this.ressourcesDeductAction = ressourcesDeductAction;
+        this.automatonTriggerAction = automatonTriggerAction;
 
         // Factory Mods
         this.scoreIncrementMods = new Action("Score Increment Mods");
@@ -78,14 +79,14 @@ class GameRoom extends GameInfo {
     }
 
     stopGameLoop() {
-        clearInterval(gameLoopInterval);
+        clearInterval(this.gameLoopInterval);
         console.log("Game loop stopped: ", this.id);
     }
 
     updateGameLogic = () => {
         // Count Game Time
         this.gameTimer += this.FRAME_INTERVAL;
-        //console.log("Time Count: ", this.elapsedTime);
+        //console.log("Time Count: ", this.gameTimer);
 
         // Update the state machine
         this.stateMachine.update.invoke();
@@ -156,12 +157,12 @@ class GameRoom extends GameInfo {
                 emitMessage = "ressourcesGeneratorUpgrade";
                 break;
             case 2:
-                partInfo = this.automatonInfo;
+                partInfo = this.automatonInfos;
                 emitMessage = "automatonUpgrade";
                 additionalCondition = () => partInfo.gameValues[0] < partInfo.gameValues[1]; // Max 20 Automaton (avoid burning server)
                 break;
             case 3:
-                partInfo = this.critMachineInfo;
+                partInfo = this.critMachineInfos;
                 emitMessage = "critMachineUpgrade";
                 break;
         }
@@ -180,14 +181,14 @@ class GameRoom extends GameInfo {
 // #region FACTORY PARTS
 // FACTORY PARTS INFOS
 class FactoryPartInfo {
-    constructor(name = "Factory Part", upgradeCost = 10, nbrOfUpgrades = 0) {
+    constructor(name = "Factory Part", upgradeCost = 10, nbrOfUpgrades = 0, flatCostIncrease = 4, costMultiplier = 1.2) {
         this.name = name;
         this.upgradeCost = upgradeCost;
         this.nbrOfUpgrades = nbrOfUpgrades;
 
-        this.baseUpgradeCost = upgradeCost;
-        this.flatCostIncrease = 2; // The Higher this is the slower the pace in early
-        this.costMultiplier = 1.2; // Every upgrade will multiply the cost by this value
+        this.baseCost = upgradeCost;
+        this.flatCostIncrease = flatCostIncrease; // The Higher this is the slower the pace in early
+        this.costMultiplier = costMultiplier; // Every upgrade will multiply the cost by this value
     }
 
     upgrade(gameRoom, player) {
@@ -199,13 +200,13 @@ class FactoryPartInfo {
     }
 
     upgradeCostFormula() {
-        return Math.floor((this.baseUpgradeCost + this.flatCostIncrease) * (this.costMultiplier ** this.nbrOfUpgrades));
+        return Math.floor((this.baseCost + this.flatCostIncrease * this.nbrOfUpgrades) * (this.costMultiplier ** this.nbrOfUpgrades));
     }
 }
 
 class ScoreAssemblerInfos extends FactoryPartInfo {
-    constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [1, 2]) {
-        super("ScoreAssembler", upgradeCost, nbrOfUpgrades);
+    constructor(nbrOfUpgrades = 1, gameValues = [1, 2]) {
+        super("ScoreAssembler", 10, nbrOfUpgrades);
         this.gameValues = gameValues; // Generate (1 - 2) Score On Click
     }
 
@@ -219,8 +220,9 @@ class ScoreAssemblerInfos extends FactoryPartInfo {
 }
 
 class RessourcesGeneratorInfo extends FactoryPartInfo {
-    constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [1, 2, 10]) {
-        super("RessourceGenerator", upgradeCost, nbrOfUpgrades);
+    constructor(nbrOfUpgrades = 1, gameValues = [1, 2, 10]) {
+        super("RessourceGenerator", 12, nbrOfUpgrades, 8, 1.3);
+
         this.gameValues = gameValues; // 1 - 2 Ressources every 10 Score
     }
 
@@ -228,8 +230,8 @@ class RessourcesGeneratorInfo extends FactoryPartInfo {
         super.upgrade(gameRoom, player);
 
         // Increase Rolls Values
-        this.gameValues[0] += 1;
-        this.gameValues[1] += 2;
+        this.gameValues[0] += 2;
+        this.gameValues[1] += 3;
 
         // Reduce Score Increment Needed (min 5) -> Math.min(2, 3, 1) returns 1
         /* if (this.nbrOfUpgrades % 10 == 0 && this.gameValues[2] > 5) {
@@ -240,9 +242,7 @@ class RessourcesGeneratorInfo extends FactoryPartInfo {
 
 class AutomatonInfo extends FactoryPartInfo {
     constructor(upgradeCost = 20, nbrOfUpgrades = 0, gameValues = [0, 20, 1, 1, 2]) {
-        super("Automaton", upgradeCost, nbrOfUpgrades);
-        this.flatCostIncrease = 5;
-        this.costMultiplier = 2;
+        super("Automaton", 20, nbrOfUpgrades, 10, 1.8);
 
         this.gameValues = gameValues; // 0/20 Automaton, 1 Click Every (1 - 2) Seconds
     }
@@ -252,13 +252,15 @@ class AutomatonInfo extends FactoryPartInfo {
 
         // Add 1 Automaton
         this.gameValues[0] += 1;
-        MultiState.getMultiState(gameRoom.stateMachine).addState(new Automaton(gameRoom));
+        MultiState.getMultiState(gameRoom.stateMachine).addState(new Automaton(
+            gameRoom, new Action("Trigger Action", [() => gameRoom.click(Math.random()), () => gameRoom.automatonTriggerAction.invoke()])));
     }
 }
 
 class CritMachineInfo extends FactoryPartInfo {
-    constructor(upgradeCost = 10, nbrOfUpgrades = 0, gameValues = [25, 0]) {
-        super("CritMachine", upgradeCost, nbrOfUpgrades);
+    constructor(nbrOfUpgrades = 0, gameValues = [25, 0]) {
+        super("CritMachine", 8, nbrOfUpgrades, 2, 1.12);
+
         this.gameValues = gameValues; // 25% Chance For 0% Effect on Score and Ressources Increments
     }
 
@@ -346,11 +348,11 @@ class RessourcesGenerator extends FactoryPart {
 }
 
 class Automaton extends FactoryPart {
-    constructor(gameRoom) {
+    constructor(gameRoom, triggerAction = new Action("Trigger Action")) {
         super("Automaton", gameRoom);
-        this.actionHandleScoreIncrement = (args) => this.handleScoreIncrement(args[0]);
         this.timeCount = 0;
         this.timeThreshold = this.getRandomTimeThreshold();
+        this.triggerAction = triggerAction;
 
         this.onEnter = () => {
             //console.log("Automaton : Enter")
@@ -364,7 +366,8 @@ class Automaton extends FactoryPart {
 
             // Automaton Trigger every X sec
             if (this.timeCount >= this.timeThreshold) {
-                this.automatonTrigger();
+                //this.automatonTrigger();
+                this.triggerAction.invoke();
                 this.timeCount = 0; // Reset the timer
                 this.timeThreshold = this.getRandomTimeThreshold(); // Reroll Threshold
             }
@@ -377,7 +380,7 @@ class Automaton extends FactoryPart {
 
     automatonTrigger() {
         //console.log("Automaton Trigger:");
-        this.gameRoom.click(Math.random());
+        this.triggerAction.invoke();
     }
 
     getRandomTimeThreshold() {

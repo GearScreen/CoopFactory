@@ -15,6 +15,16 @@ button:hover {
     border-color: white;
 }
 
+button:active {
+    background-color: #4a4a4a !important;
+    transform: scale(1.1, 1.1) !important;
+}
+
+.manual-active {
+    background-color: #4a4a4a !important;
+    transform: scale(1.1, 1.1) !important;
+}
+
 .bg_color_01:hover {
     background-color: black;
     color: red;
@@ -86,6 +96,10 @@ input {
 .wh_04 {
     width: 5em;
     height: 5em;
+}
+
+.wh_05 {
+    width: 15em;
 }
 
 .border_01 {

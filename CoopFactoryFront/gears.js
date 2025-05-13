@@ -17,18 +17,19 @@ socket.on("roomCreated", (roomInfo) => {
 
 //JOIN Room
 function joinRoom() {
-    const roomId = document.getElementById("roomIdInput").value;
+    const joinRoomInput = document.getElementById("roomIdInput");
+    const roomId = joinRoomInput.value;
 
     if (roomId) {
         //console.log("Joining Room ID:", roomId);
         socket.emit("joinRoom", roomId, currentUsername);
+        joinRoomInput.value = "";
     }
 }
 
 socket.on("roomJoined", (roomInfo) => {
     //console.log("Room joined:", roomInfo);
     enterRoom(roomInfo);
-    updateScoreDisplay(roomInfo.score);
 });
 
 // LEAVE Room
@@ -59,7 +60,6 @@ async function fetchPlayerInfo() {
     });
 }
 
-// Example usage
 async function handlePlayerInfo(onComplete) {
     try {
         const playerInfos = await fetchPlayerInfo();
@@ -142,6 +142,10 @@ socket.on("chatMessage", (chatMessageInfo) => {
     messageElement.innerHTML = `[${chatMessageInfo.timestamp}] <strong>${chatMessageInfo.player}</strong>: ${chatMessageInfo.message}`;
     chatBox.appendChild(messageElement);
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+});
+
+socket.on("ClickEffect", () => {
+    manualButtonEffect();
 });
 
 socket.on("scoreUpdate", (newScore) => {

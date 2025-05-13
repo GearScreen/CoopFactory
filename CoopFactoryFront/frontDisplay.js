@@ -38,6 +38,10 @@ function enterRoom(roomInfo) {
     document.getElementById("gameSection").style.display = "block";
     document.getElementById("RoomIdDisplay").textContent = roomInfo.id;
 
+    // Update Score + Ressources Display :
+    updateScoreDisplay(roomInfo.score);
+    updateRessourcesDisplay(0);
+
     // Update Factory Parts Display
     updateScoreAssemblerDisplay(roomInfo.scoreAssemblerInfos);
     updateRessourcesGeneratorDisplay(roomInfo.ressourcesGeneratorInfos);
@@ -54,7 +58,11 @@ function leaveRoom() {
 
 // USERNAME
 function setUsername(username) {
-    currentUsername = username;
+    if (username) {
+        currentUsername = username;
+    }else {
+        currentUsername = "Default";
+    }
 
     const usernameDisplay = document.getElementById("usernameDisplay");
     if (usernameDisplay) {
@@ -110,12 +118,14 @@ function formatLargeNumber(number) {
 }
 
 function updateScoreDisplay(score) {
-    const formattedScore = score.toLocaleString(); // Adds commas (e.g., 1,000,000)
+    const intScore = Math.floor(score);
+    const formattedScore = intScore.toLocaleString(); // Adds commas (e.g., 1,000,000)
     document.getElementById("scoreDisplay").textContent = formattedScore;
 }
 
 function updateRessourcesDisplay(ressources) {
-    const formattedRessources = ressources.toLocaleString();
+    const intRessources = Math.floor(ressources);
+    const formattedRessources = intRessources.toLocaleString();
     document.getElementById("ressourcesDisplay").textContent = formattedRessources;
 }
 
@@ -123,14 +133,14 @@ function updatePlayerCount(playerCount) {
     document.getElementById("playerCount").textContent = playerCount;
 }
 
-function rollDisplay(roll1, roll2) {
-    return "(" + roll1 + " - " + roll2 + ")";
-}
-
 function updateDisplayById(updates = []) {
     updates.forEach((update) => {
         document.getElementById(update.id).textContent = update.text;
     });
+}
+
+function rollDisplay(roll1, roll2) {
+    return "(" + roll1 + " - " + roll2 + ")";
 }
 
 function updateElem(id, text) {
@@ -141,7 +151,7 @@ function updateScoreAssemblerDisplay(scoreAssemblerInfos) {
     const gameValues = scoreAssemblerInfos.gameValues;
 
     updateDisplayById([
-        updateElem("ScoreAssembler_UpgradeCost", scoreAssemblerInfos.upgradeCost),
+        updateElem("ScoreAssembler_UpgradeCost", scoreAssemblerInfos.upgradeCost.toLocaleString()),
         updateElem("ScoreAssembler_UpgradeNbr", scoreAssemblerInfos.nbrOfUpgrades),
         updateElem("ScoreAssembler_Roll_01", rollDisplay(gameValues[0], gameValues[1])),
         updateElem("ScoreAssembler_Roll_02", rollDisplay(gameValues[0], gameValues[1]))
@@ -153,7 +163,7 @@ function updateRessourcesGeneratorDisplay(ressourcesGeneratorInfos) {
     const gameValues = ressourcesGeneratorInfos.gameValues;
 
     updateDisplayById([
-        updateElem("RessourceGenerator_UpgradeCost", ressourcesGeneratorInfos.upgradeCost),
+        updateElem("RessourceGenerator_UpgradeCost", ressourcesGeneratorInfos.upgradeCost.toLocaleString()),
         updateElem("RessourceGenerator_UpgradeNbr", ressourcesGeneratorInfos.nbrOfUpgrades),
         updateElem("RessourceGenerator_Effect_01", rollDisplay(gameValues[0], gameValues[1])),
         updateElem("RessourceGenerator_Effect_02", gameValues[2])
@@ -165,7 +175,7 @@ function updateAutomatonDisplay(automatonInfos) {
     const gameValues = automatonInfos.gameValues;
 
     updateDisplayById([
-        updateElem("Automaton_UpgradeCost", automatonInfos.upgradeCost),
+        updateElem("Automaton_UpgradeCost", automatonInfos.upgradeCost.toLocaleString()),
         updateElem("Automaton_UpgradeNbr", automatonInfos.nbrOfUpgrades),
         updateElem("Automaton_Effect_01", gameValues[0]),
         updateElem("Automaton_Effect_02", rollDisplay(gameValues[3], gameValues[4]))
@@ -176,7 +186,7 @@ function updateCritMachineDisplay(critMachineInfos) {
     const gameValues = critMachineInfos.gameValues;
 
     updateDisplayById([
-        updateElem("CritMachine_UpgradeCost", critMachineInfos.upgradeCost),
+        updateElem("CritMachine_UpgradeCost", critMachineInfos.upgradeCost.toLocaleString()),
         updateElem("CritMachine_UpgradeNbr", critMachineInfos.nbrOfUpgrades),
         updateElem("CritMachine_Effect_01", gameValues[0]),
         updateElem("CritMachine_Effect_02", gameValues[1])
@@ -189,9 +199,16 @@ function updateUpgradeDisplay(partInfo) {
     const gameValues = partInfo.gameValues;
 
     updateDisplayById([
-        updateElem(`${partInfo.name}_UpgradeCost`, partInfo.upgradeCost),
+        updateElem(`${partInfo.name}_UpgradeCost`, partInfo.upgradeCost.toLocaleString()),
         updateElem("RessourceGenerator_UpgradeNbr", partInfo.nbrOfUpgrades),
         updateElem("RessourceGenerator_Effect_01", rollDisplay(gameValues[0], gameValues[1])),
         updateElem("RessourceGenerator_Effect_02", gameValues[2])
     ]);
+}
+
+function manualButtonEffect() {
+    const button = document.getElementById('incrementScoreButton');
+    button.classList.add('manual-active');
+
+    setTimeout(() => button.classList.remove('manual-active'), 100);
 }

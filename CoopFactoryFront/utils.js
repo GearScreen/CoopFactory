@@ -9,12 +9,6 @@ function generateRandomUsername() {
     return `${randomAdjective}${randomNoun}${randomNumber}`;
 }
 
-function generateUsernameFromAPI() {
-    get_Random_Username_From_API((username) => {
-        setUsername(username);
-    });
-}
-
 function get_Random_Username_From_API(onComplete)
 {
     fetchDataFromApi('https://usernameapiv1.vercel.app/api/random-usernames',
@@ -23,6 +17,12 @@ function get_Random_Username_From_API(onComplete)
             console.log("Username Generated:", username)
             onComplete(username);
         });
+}
+
+function generateUsernameFromAPI() {
+    get_Random_Username_From_API((username) => {
+        setUsername(username);
+    });
 }
 
 // #endregion Username

@@ -65,11 +65,9 @@ io.on("connection", (socket) => {
             new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
             new Action("Score Increment", [emitScoreUpdate]), // Score update on Score increment Event
             new Action("Ressources Increment", [() => emitRessourcesUpdate(socket.gameRoom.id)]),
-            new Action("Ressources Deduct", [(args) => {
-                const player = args[0];
-                emitRessourcesUpdate(player.id);
-            }]),
-            new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(args[0], args[1])]) // args[0] = emitMessage, args[1] = PartInfo
+            new Action("Ressources Deduct", [(args) => emitRessourcesUpdate(args[0].id)]), // args[0] = payer
+            new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(args[0], args[1])],), // args[0] = emitMessage, args[1] = PartInfo
+            new Action("Automaton Trigger Action", [emitButtonClickEffect])
         );
     }
 
@@ -101,8 +99,6 @@ io.on("connection", (socket) => {
 
     // SET Username
     socket.on("setUsername", (username) => {
-        if (!socket.gameRoom) return;
-
         trySetUsername(username);
     });
 
@@ -187,6 +183,7 @@ io.on("connection", (socket) => {
 
         // If Room empty = Deleted
         if (room.players.length === 0) {
+            rooms[room.id].stopGameLoop();
             delete rooms[room.id];
             console.log(`Room ${room.id} deleted (empty)`);
         }
@@ -227,7 +224,7 @@ io.on("connection", (socket) => {
     function roomInfo(room = socket.gameRoom) {
         if (!checkRoom(room)) return;
 
-        const safeRoom =  new GameInfo(room.id, getPlayersInfoFront(room), room.score, room.gameTimer, room.scoreAssemblerinfos,
+        const safeRoom = new GameInfo(room.id, getPlayersInfoFront(room), room.score, room.gameTimer, room.scoreAssemblerinfos,
         room.ressourcesGeneratorInfos, room.automatonInfos, room.critMachineInfo);
 
         return safeRoom;
@@ -251,6 +248,8 @@ io.on("connection", (socket) => {
     function trySetUsername(username) {
         console.log("Trying to set username:", username);
 
+        if (!socket.gameRoom) return;
+
         // Check if the username is valid
         if (!username || username.length > 20) {
             socket.emit("error", "Username is too long or empty");
@@ -259,8 +258,8 @@ io.on("connection", (socket) => {
         }
 
         // Check if the username is already taken in the room
-        if (socket.gameRoom.players.some((player) => player.username === username)) {
-            socket.emit("error", "Username is already taken in this room!");
+        if (socket.gameRoom.players.some((player) => player.id != socket.id && player.username === username)) {
+            socket.emit("error", "Username is already taken in this room");
             setUsername(defaultUsername);
             return;
         }
@@ -307,6 +306,10 @@ io.on("connection", (socket) => {
 
     function emitRessourcesUpdate(id) {
         io.to(id).emit("ressourcesUpdate");
+    }
+
+    function emitButtonClickEffect() {
+        emitToEveryOneInRoom("ClickEffect");
     }
 });
 
