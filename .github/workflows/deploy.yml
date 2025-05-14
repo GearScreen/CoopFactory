@@ -8,17 +8,23 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for gh-pages action
 
-      # Only needed if you have a build step:
+      # Only include if you need to build your files
       # - name: Build
       #   run: |
       #     cd CoopFactoryFront
-      #     npm install && npm run build
+      #     npm install
+      #     npm run build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./CoopFactoryFront
-          keep_files: true
+          force_orphan: true  # Ensures clean deployment
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
