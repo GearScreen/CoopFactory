@@ -13,7 +13,7 @@ app.use(cors()); // Allow cross-origin requests
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*", // Allow all origins (Replace Later)
+        origin: "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/", // Allow all origins (Replace Later) : https://gearscreen.github.io/CoopFactory/CoopFactoryFront/ *
         methods: ["GET", "POST"],
     },
 });
