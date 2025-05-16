@@ -1,4 +1,4 @@
-const socket = io("http://localhost:3000"); // Replace Later with server URL
+const socket = io("https://81f9-92-174-88-93.ngrok-free.app/"); // http://localhost:3000, https://81f9-92-174-88-93.ngrok-free.app/
 
 let currentUsername = "";
 
@@ -6,7 +6,7 @@ let currentUsername = "";
 function createRoom() {
     const randomRoomId = Math.random().toString(36).substring(2, 8);
 
-    //console.log("Creating Room ID:", currentRoomId);
+    console.log("Creating Room ID:", randomRoomId);
     socket.emit("createRoom", randomRoomId, currentUsername);
 }
 
