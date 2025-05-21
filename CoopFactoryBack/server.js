@@ -63,7 +63,7 @@ io.on("connection", (socket) => {
     function generateGameRoom(roomId, players = []) {
         return new GameRoom(roomId, players,
             new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
-            new Action("Score Increment", [emitScoreUpdate]), // Score update on Score increment Event
+            new Action("Score Increment", [() => emitScoreUpdate()]), // Score update on Score increment Event
             new Action("Ressources Increment", [() => ressourceUpdateAll()]), // () => emitRessourcesUpdate(socket.gameRoom.id)
             new Action("Ressources Deduct", [() => ressourceUpdateAll()]), // args[0] = payer, (args) => emitRessourcesUpdate(args[0].id)
             new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(args[0], args[1])],), // args[0] = emitMessage, args[1] = PartInfo
