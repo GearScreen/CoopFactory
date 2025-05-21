@@ -304,8 +304,9 @@ io.on("connection", (socket) => {
         socket.emit("displayMessage", message, error);
     }
 
-    function emitScoreUpdate() {
-        io.to(socket.gameRoom.id).emit("scoreUpdate", socket.gameRoom.score);
+    function emitScoreUpdate(room = socket.gameRoom) {
+        if (!checkRoom(room)) return;
+        io.to(room.id).emit("scoreUpdate", room.score);
     }
 
     function ressourceUpdateAll(room = socket.gameRoom) {
