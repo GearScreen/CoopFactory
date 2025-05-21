@@ -13,7 +13,7 @@ app.use(cors()); // Allow cross-origin requests
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/", // Allow all origins (Replace Later) : https://gearscreen.github.io/CoopFactory/CoopFactoryFront/ *
+        origin: "*", // Allowed origins : *, https://gearscreen.github.io/CoopFactory/CoopFactoryFront/
         methods: ["GET", "POST"],
     },
 });
@@ -64,8 +64,8 @@ io.on("connection", (socket) => {
         return new GameRoom(roomId, players,
             new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
             new Action("Score Increment", [emitScoreUpdate]), // Score update on Score increment Event
-            new Action("Ressources Increment", [() => emitRessourcesUpdate(socket.gameRoom.id)]),
-            new Action("Ressources Deduct", [(args) => emitRessourcesUpdate(args[0].id)]), // args[0] = payer
+            new Action("Ressources Increment", [() => ressourceUpdateAll()]), // () => emitRessourcesUpdate(socket.gameRoom.id)
+            new Action("Ressources Deduct", [() => ressourceUpdateAll()]), // args[0] = payer, (args) => emitRessourcesUpdate(args[0].id)
             new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(args[0], args[1])],), // args[0] = emitMessage, args[1] = PartInfo
             new Action("Automaton Trigger Action", [emitButtonClickEffect])
         );
@@ -163,6 +163,7 @@ io.on("connection", (socket) => {
     function joinRoom(roomId) {
         socket.join(roomId);
         socket.gameRoom = rooms[roomId];
+        //console.log("GameRoom:", socket.gameRoom);
         //console.log("Rooms:", socket.rooms);
     }
 
@@ -225,7 +226,7 @@ io.on("connection", (socket) => {
         if (!checkRoom(room)) return;
 
         const safeRoom = new GameInfo(room.id, getPlayersInfoFront(room), room.score, room.gameTimer, room.scoreAssemblerinfos,
-        room.ressourcesGeneratorInfos, room.automatonInfos, room.critMachineInfo);
+            room.ressourcesGeneratorInfos, room.automatonInfos, room.critMachineInfo);
 
         return safeRoom;
     }
@@ -241,6 +242,7 @@ io.on("connection", (socket) => {
     }
 
     function getPlayersNameList(room = socket.gameRoom) {
+        if (!checkRoom(room)) return;
         return room.players.map((player) => player.username);
     }
 
@@ -277,10 +279,12 @@ io.on("connection", (socket) => {
     }
 
     function getRoomPlayer(room = socket.gameRoom) {
-        return room.players.find((player) => player.id === socket.id);
+        if (!checkRoom(room)) return;
+        return room.players?.find((player) => player.id === socket.id);
     }
 
     function getPlayersInfoFront(room = socket.gameRoom) {
+        if (!checkRoom(room)) return;
         return room.players.map((player) => getPlayerInfoFront(player));
     }
 
@@ -304,8 +308,9 @@ io.on("connection", (socket) => {
         io.to(socket.gameRoom.id).emit("scoreUpdate", socket.gameRoom.score);
     }
 
-    function emitRessourcesUpdate(id) {
-        io.to(id).emit("ressourcesUpdate");
+    function ressourceUpdateAll(room = socket.gameRoom) {
+        if (!checkRoom(room)) return;
+        room.players?.forEach((player) => io.to(player.id).emit("ressourcesUpdate", player.ressources));
     }
 
     function emitButtonClickEffect() {

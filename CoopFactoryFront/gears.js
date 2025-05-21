@@ -1,4 +1,9 @@
-const socket = io("https://81f9-92-174-88-93.ngrok-free.app/"); // http://localhost:3000, https://81f9-92-174-88-93.ngrok-free.app/
+const socket = io("https://coopfactory.onrender.com"); // http://localhost:3000 https://coopfactory.onrender.com
+
+// const socket = io("https://1828-92-174-88-93.ngrok-free.app", {
+//     path: "/socket.io/",
+//     transports: ["websocket"] // Force WebSocket if polling fails
+// });
 
 let currentUsername = "";
 
@@ -99,6 +104,10 @@ function askFactoryPartUpgrade(partNbr) {
 
 //#region Socket General Event listeners
 
+socket.on("connect", () => {
+    console.log("Connected to server");
+});
+
 socket.on("disconnect", () => {
     console.log("Disconnected from server");
     showNotification("Disconnected from server", true);
@@ -152,8 +161,9 @@ socket.on("scoreUpdate", (newScore) => {
     updateScoreDisplay(newScore);
 });
 
-socket.on("ressourcesUpdate", () => {
-    handlePlayerInfo((playerInfos) => updateRessourcesDisplay(playerInfos.ressources));
+socket.on("ressourcesUpdate", (ressources) => {
+    //console.log("Ressources Update :", ressources);
+    updateRessourcesDisplay(ressources);
 });
 
 socket.on("scoreAssemblerUpgrade", (scoreAssemblerInfos) => {
