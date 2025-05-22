@@ -240,23 +240,6 @@ class RessourcesGeneratorInfo extends FactoryPartInfo {
     }
 }
 
-class AutomatonInfo extends FactoryPartInfo {
-    constructor(upgradeCost = 20, nbrOfUpgrades = 0, gameValues = [0, 20, 1, 1, 2]) {
-        super("Automaton", 20, nbrOfUpgrades, 10, 1.8);
-
-        this.gameValues = gameValues; // 0/20 Automaton, 1 Click Every (1 - 2) Seconds
-    }
-
-    upgrade(gameRoom, player) {
-        super.upgrade(gameRoom, player);
-
-        // Add 1 Automaton
-        this.gameValues[0] += 1;
-        MultiState.getMultiState(gameRoom.stateMachine).addState(new Automaton(
-            gameRoom, new Action("Trigger Action", [() => gameRoom.click(Math.random()), () => gameRoom.automatonTriggerAction.invoke()])));
-    }
-}
-
 class CritMachineInfo extends FactoryPartInfo {
     constructor(nbrOfUpgrades = 0, gameValues = [25, 0]) {
         super("CritMachine", 8, nbrOfUpgrades, 2, 1.12);
@@ -269,6 +252,23 @@ class CritMachineInfo extends FactoryPartInfo {
 
         // Increase Rolls Values
         this.gameValues[1] += 5;
+    }
+}
+
+class AutomatonInfo extends FactoryPartInfo {
+    constructor(nbrOfUpgrades = 0, gameValues = [0, 20, 1, 1, 2]) {
+        super("Automaton", 20, nbrOfUpgrades, 10, 1.8);
+
+        this.gameValues = gameValues; // 0/20 Automaton, 1 Click Every (1 - 2) Seconds
+    }
+
+    upgrade(gameRoom, player) {
+        super.upgrade(gameRoom, player);
+
+        // Add 1 Automaton
+        this.gameValues[0] += 1;
+        MultiState.getMultiState(gameRoom.stateMachine).addState(new Automaton(
+            gameRoom, new Action("Trigger Action", [() => gameRoom.click(Math.random()), () => gameRoom.automatonTriggerAction.invoke()])));
     }
 }
 
@@ -347,6 +347,40 @@ class RessourcesGenerator extends FactoryPart {
     }
 }
 
+class CritMachine extends FactoryPart {
+    constructor(gameRoom) {
+        super("CritMachine", gameRoom);
+        this.actionHandle = (args) => this.critRoll(args[0]);
+
+        this.onEnter = () => {
+            //console.log("CritMachine : Enter")
+            // Add Crit
+            gameRoom.scoreIncrementMods.add(this.actionHandle);
+            gameRoom.ressourcesIncrementMods.add(this.actionHandle);
+        };
+
+        this.update = null;
+
+        this.onExit = () => {
+            //console.log("CritMachine : Exit")
+            // Remove Crit
+            gameRoom.scoreIncrementMods.remove(this.actionHandle);
+            gameRoom.ressourcesIncrementMods.remove(this.actionHandle);
+        }
+    }
+
+    critRoll(valueHolder) {
+        // crit
+        const critChance = this.gameRoom.critMachineInfos.gameValues[0];
+        const critEffect = this.gameRoom.critMachineInfos.gameValues[1];
+
+        if (rollPercent(critChance)) {
+            valueHolder.value *= 1 + (critEffect * .01);
+            //console.log("CRIT:", valueHolder.value);
+        }
+    }
+}
+
 class Automaton extends FactoryPart {
     constructor(gameRoom, triggerAction = new Action("Trigger Action")) {
         super("Automaton", gameRoom);
@@ -385,40 +419,6 @@ class Automaton extends FactoryPart {
 
     getRandomTimeThreshold() {
         return 1000 + Math.random() * 1000;
-    }
-}
-
-class CritMachine extends FactoryPart {
-    constructor(gameRoom) {
-        super("CritMachine", gameRoom);
-        this.actionHandle = (args) => this.critRoll(args[0]);
-
-        this.onEnter = () => {
-            //console.log("CritMachine : Enter")
-            // Add Crit
-            gameRoom.scoreIncrementMods.add(this.actionHandle);
-            gameRoom.ressourcesIncrementMods.add(this.actionHandle);
-        };
-
-        this.update = null;
-
-        this.onExit = () => {
-            //console.log("CritMachine : Exit")
-            // Remove Crit
-            gameRoom.scoreIncrementMods.remove(this.actionHandle);
-            gameRoom.ressourcesIncrementMods.remove(this.actionHandle);
-        }
-    }
-
-    critRoll(valueHolder) {
-        // crit
-        const critChance = this.gameRoom.critMachineInfos.gameValues[0];
-        const critEffect = this.gameRoom.critMachineInfos.gameValues[1];
-
-        if (rollPercent(critChance)) {
-            valueHolder.value *= 1 + (critEffect * .01);
-            //console.log("CRIT:", valueHolder.value);
-        }
     }
 }
 

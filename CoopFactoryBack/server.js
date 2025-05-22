@@ -38,6 +38,7 @@ io.on("connection", (socket) => {
         leaveGameRoom();
     });
 
+    // Player Functions
     // CREATE Room
     socket.on("createRoom", (roomId, playerUsername) => {
         if (socket.gameRoom) {
@@ -59,17 +60,6 @@ io.on("connection", (socket) => {
         socket.emit("roomCreated", roomInfo());
         console.log(`Room ${roomId} created by ${socket.id}`);
     });
-
-    function generateGameRoom(roomId, players = []) {
-        return new GameRoom(roomId, players,
-            new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
-            new Action("Score Increment", [() => emitScoreUpdate()]), // Score update on Score increment Event
-            new Action("Ressources Increment", [() => ressourceUpdateAll()]), // () => emitRessourcesUpdate(socket.gameRoom.id)
-            new Action("Ressources Deduct", [() => ressourceUpdateAll()]), // args[0] = payer, (args) => emitRessourcesUpdate(args[0].id)
-            new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(args[0], args[1])],), // args[0] = emitMessage, args[1] = PartInfo
-            new Action("Automaton Trigger Action", [emitButtonClickEffect])
-        );
-    }
 
     // JOIN Room
     socket.on("joinRoom", (roomId, playerUsername) => {
@@ -147,15 +137,6 @@ io.on("connection", (socket) => {
     });
 
     // ROOM
-    function checkRoom(room) {
-        if (!room) {
-            socket.emit("error", "Room does not exist.");
-            return null;
-        }
-
-        return room;
-    }
-
     function generateRoomPlayer() {
         return new RoomPlayer(socket.id, socket.playerInfo.username);
     }
@@ -209,18 +190,6 @@ io.on("connection", (socket) => {
         leaveGameRoom();
     }
 
-    function actionLimiter(timeLimit = 1000) {
-        const now = Date.now();
-        if (now - socket.lastActionTime < timeLimit) {
-            kickPlayer("Kicked for performing actions too quickly");
-            return true;
-        }
-
-        socket.lastActionTime = now;
-
-        return false;
-    }
-
     // RoomInfo For Frontend (safe)
     function roomInfo(room = socket.gameRoom) {
         if (!checkRoom(room)) return;
@@ -247,8 +216,20 @@ io.on("connection", (socket) => {
     }
 
     // PLAYER
+    function actionLimiter(timeLimit = 1000) {
+        const now = Date.now();
+        if (now - socket.lastActionTime < timeLimit) {
+            kickPlayer("Kicked for performing actions too quickly");
+            return true;
+        }
+
+        socket.lastActionTime = now;
+
+        return false;
+    }
+
     function trySetUsername(username) {
-        console.log("Trying to set username:", username);
+        //console.log("Trying to set username:", username);
 
         if (!socket.gameRoom) return;
 
@@ -295,29 +276,54 @@ io.on("connection", (socket) => {
         };
     }
 
-    // EMIT
-    function emitToEveryOneInRoom(emit, ...args) {
-        io.to(socket.gameRoom.id).emit(emit, ...args);
-    }
-
     function sendDisplayMessage(message, error) {
         socket.emit("displayMessage", message, error);
     }
-
-    function emitScoreUpdate(room = socket.gameRoom) {
-        if (!checkRoom(room)) return;
-        io.to(room.id).emit("scoreUpdate", room.score);
-    }
-
-    function ressourceUpdateAll(room = socket.gameRoom) {
-        if (!checkRoom(room)) return;
-        room.players?.forEach((player) => io.to(player.id).emit("ressourcesUpdate", player.ressources));
-    }
-
-    function emitButtonClickEffect() {
-        emitToEveryOneInRoom("ClickEffect");
-    }
 });
+
+function generateGameRoom(roomId, players = []) {
+    return new GameRoom(roomId, players,
+        new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
+        new Action("Score Increment", [() => emitScoreUpdate(rooms[roomId])]), // Score update on Score increment Event
+        new Action("Ressources Increment", [() => ressourceUpdateAll(rooms[roomId])]), // () => emitRessourcesUpdate(socket.gameRoom.id)
+        new Action("Ressources Deduct", [() => ressourceUpdateAll(rooms[roomId])]), // args[0] = payer, (args) => emitRessourcesUpdate(args[0].id)
+        new Action("UpgradeFactoryPart", [(args) => emitToEveryOneInRoom(rooms[roomId], args[0], args[1])],), // args[0] = emitMessage, args[1] = PartInfo
+        new Action("Automaton Trigger Action", [() => emitButtonClickEffect(rooms[roomId])])
+    );
+}
+
+function checkRoom(room) {
+    if (!room) {
+        //socket.emit("error", "Room does not exist.");
+        //sendDisplayMessage("Room does not exist.", true);
+        return null;
+    }
+
+    return room;
+}
+
+// Global Functions (Room)
+function emitScoreUpdate(room) {
+    //console.log("ScoreUpdate");
+    if (!checkRoom(room)) return;
+    io.to(room.id).emit("scoreUpdate", room.score);
+}
+
+function ressourceUpdateAll(room) {
+    if (!checkRoom(room)) return;
+    room.players?.forEach((player) => io.to(player.id).emit("ressourcesUpdate", player.ressources));
+}
+
+function emitToEveryOneInRoom(room, emit, ...args) {
+    //console.log("Emit:");
+    if (!checkRoom(room)) return;
+    io.to(room.id).emit(emit, ...args);
+}
+
+function emitButtonClickEffect(room) {
+    //console.log("ClickEffect:", room.id);
+    emitToEveryOneInRoom(room, "ClickEffect");
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
