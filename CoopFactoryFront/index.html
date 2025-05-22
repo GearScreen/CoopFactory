@@ -48,7 +48,7 @@
             <h2 class="margin_02">Factory :</h2>
             <p class="font_01 margin_03">Score: <strong><span id="scoreDisplay">0</span></strong> &nbsp; &nbsp; &nbsp;
                 Ressources: <strong><span id="ressourcesDisplay">0</span></strong></p>
-            <button id="incrementScoreButton" class="wh_02 font_02 border_01"><strong>Generate <span id="ScoreAssembler_Roll_01">(1 - 2)</span> Score</strong></button>
+            <button id="incrementScoreButton" class="wh_02 font_02 border_01"><strong> +<span id="ScoreAssembler_Roll_01">(1 - 2)</span> Score</strong></button>
             <div class="wh_01"></div>
             <h3 class="margin_02">Upgrades (cost ressources) :</h3>
             <div class="grid_01">
@@ -57,7 +57,7 @@
                     <p class="margin_01">Upgrade: <span id="ScoreAssembler_UpgradeNbr">0</span></p>
                     <div class="grid_02">
                         <button onclick="askFactoryPartUpgrade(0)" class="wh_04 font_02"><strong>Score Assembler</strong></button>
-                        <p class="wh_05">Generate <span id="ScoreAssembler_Roll_02">(1 - 2)</span> Score On Click</p>
+                        <p class="wh_05"> +<span id="ScoreAssembler_Roll_02">(1 - 2)</span> Score On Click</p>
                     </div>
                 </div>
                 <div>
@@ -65,17 +65,8 @@
                     <p class="margin_01">Upgrade: <span id="RessourceGenerator_UpgradeNbr">0</span></p>
                     <div class="grid_02">
                         <button onclick="askFactoryPartUpgrade(1)" class="wh_04 font_02"><strong>Ressource Generator</strong></button>
-                        <p class="wh_05">+<span id="RessourceGenerator_Effect_01">(1 - 2)</span> Ressources Every <span id="RessourceGenerator_Effect_02">10</span>
+                        <p class="wh_05">+<span id="RessourceGenerator_Effect_01">(1 - 2)</span> Ressources for each player Every <span id="RessourceGenerator_Effect_02">10</span>
                         Score</p>
-                    </div>
-                </div>
-                <div>
-                    <p class="margin_02">Cost: <span id="Automaton_UpgradeCost">10</span></p>
-                    <p class="margin_01">Upgrade: <span id="Automaton_UpgradeNbr">0</span></p>
-                    <div class="grid_02">
-                        <button onclick="askFactoryPartUpgrade(2)" class="wh_04 font_02"><strong>Automaton</strong></button>
-                        <p class="wh_05"><span id="Automaton_Effect_01">0</span>/20 Automaton : 1 Click Every <span id="Automaton_Effect_02">(1 - 2)</span>
-                            Seconds</p>
                     </div>
                 </div>
                 <div>
@@ -84,6 +75,15 @@
                     <div class="grid_02">
                         <button onclick="askFactoryPartUpgrade(3)" class="wh_04 font_02"><strong>Crit Machine</strong></button>
                         <p class="wh_05"><span id="CritMachine_Effect_01">25</span>% Chance For <span id="CritMachine_Effect_02">0</span>% Effect on Increments</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="margin_02">Cost: <span id="Automaton_UpgradeCost">10</span></p>
+                    <p class="margin_01">Upgrade: <span id="Automaton_UpgradeNbr">0</span></p>
+                    <div class="grid_02">
+                        <button onclick="askFactoryPartUpgrade(2)" class="wh_04 font_02"><strong>Automaton</strong></button>
+                        <p class="wh_05"><span id="Automaton_Effect_01">0</span>/20 Automaton, each : <br> 1 Click Every <span id="Automaton_Effect_02">(1 - 2)</span>
+                            Seconds</p>
                     </div>
                 </div>
             </div>

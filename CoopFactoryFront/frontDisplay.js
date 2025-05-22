@@ -51,9 +51,18 @@ function enterRoom(roomInfo) {
 
 function leaveRoom() {
     // Reset the game section
+    clearChat();
     document.getElementById("gameSection").style.display = "none";
     document.getElementById("createRoomSection").style.display = "block";
     document.getElementById("joinRoomSection").style.display = "block";
+    console.log("Left Room");
+}
+
+function clearChat() {
+    const chatBox = document.getElementById("chatBox");
+    if (chatBox) {
+        chatBox.innerHTML = "";
+    }
 }
 
 // USERNAME

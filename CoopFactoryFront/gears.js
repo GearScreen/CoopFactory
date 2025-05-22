@@ -1,4 +1,5 @@
-const socket = io("https://coopfactory.onrender.com"); // http://localhost:3000 https://coopfactory.onrender.com
+const serverAdress = "http://localhost:3000";  // http://localhost:3000 https://coopfactory.onrender.com
+const socket = io(serverAdress);
 
 // const socket = io("https://1828-92-174-88-93.ngrok-free.app", {
 //     path: "/socket.io/",
@@ -105,7 +106,7 @@ function askFactoryPartUpgrade(partNbr) {
 //#region Socket General Event listeners
 
 socket.on("connect", () => {
-    console.log("Connected to server");
+    console.log("Connected to server:", serverAdress);
 });
 
 socket.on("disconnect", () => {
