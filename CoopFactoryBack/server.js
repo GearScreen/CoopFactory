@@ -5,7 +5,7 @@ const cors = require("cors");
 
 // Import Custom Modules
 const { PlayerInfo, RoomPlayer, GameRoom, GameInfo } = require("./gameManager");
-const { getCurrentDateTime, cloneWithoutCircularReferences, Action } = require("./utils");
+const { Action } = require("./utils");
 
 const app = express();
 app.use(cors()); // Allow cross-origin requests
@@ -13,7 +13,7 @@ app.use(cors()); // Allow cross-origin requests
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*", // Allowed origins : *, https://gearscreen.github.io/CoopFactory/CoopFactoryFront/
+        origin: "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/", // Allowed origins : *, https://gearscreen.github.io/CoopFactory/CoopFactoryFront/
         methods: ["GET", "POST"],
     },
 });
