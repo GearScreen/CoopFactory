@@ -2,6 +2,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     generateUsernameFromAPI();
 
+    showLoading();
+
     // Generate Score Button
     (() => {
         function incrementScore() {
@@ -25,6 +27,21 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Chat input field with id 'chatInput' not found.");
     }
 });
+
+function showLoading(isShown = true) {
+    const icon = document.getElementById("statusIcon");
+    if (!icon) return;
+
+    if (isShown) {
+        // Show loading and start rotating
+        icon.src = "loading.png";
+        icon.classList.add("rotating");
+        return;
+    }
+
+    icon.classList.remove("rotating");
+    icon.src = "green_pixel_checkmark.png";
+}
 
 // ROOM
 function enterRoom(roomInfo) {
@@ -69,7 +86,7 @@ function clearChat() {
 function setUsername(username) {
     if (username) {
         currentUsername = username;
-    }else {
+    } else {
         currentUsername = "Default";
     }
 

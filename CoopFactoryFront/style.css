@@ -5,8 +5,10 @@ button {
     font-weight: 400;
     font-size: large;
     font-style: normal;
-    cursor: pointer; /* Ensure the pointer changes on hover */
-    transition: all 0.3s ease; /* Smooth transition for hover effects */
+    cursor: pointer;
+    /* Ensure the pointer changes on hover */
+    transition: all 0.3s ease;
+    /* Smooth transition for hover effects */
 }
 
 button:hover {
@@ -102,6 +104,15 @@ input {
     width: 15em;
 }
 
+.wh_06 {
+    width: 2em;
+    height: 1.5em;
+}
+
+.wh_07 {
+    width: 7em;
+}
+
 .border_01 {
     border: 2px solid black;
     padding: 20px;
@@ -147,3 +158,13 @@ input {
 }
 
 /* #endregion */
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.rotating {
+    animation: spin 1s linear infinite;
+}
