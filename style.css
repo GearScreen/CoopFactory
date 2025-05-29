@@ -1,0 +1,170 @@
+/* #region Default */
+
+button {
+    font-family: "VT323", monospace;
+    font-weight: 400;
+    font-size: large;
+    font-style: normal;
+    cursor: pointer;
+    /* Ensure the pointer changes on hover */
+    transition: all 0.3s ease;
+    /* Smooth transition for hover effects */
+}
+
+button:hover {
+    background-color: black;
+    color: white;
+    border-color: white;
+}
+
+button:active {
+    background-color: #4a4a4a !important;
+    transform: scale(1.1, 1.1) !important;
+}
+
+.manual-active {
+    background-color: #4a4a4a !important;
+    transform: scale(1.1, 1.1) !important;
+}
+
+.bg_color_01:hover {
+    background-color: black;
+    color: red;
+    border-color: red;
+}
+
+input {
+    font-family: "VT323", monospace;
+    font-weight: 400;
+    font-size: large;
+    font-style: normal;
+}
+
+/* #endregion */
+
+/* #region Text */
+
+.font_01 {
+    font-size: 2em;
+}
+
+.font_02 {
+    font-size: 1.5em;
+}
+
+.black-ops-one-regular {
+    font-family: "Black Ops One", system-ui;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.vt323-regular {
+    font-family: "VT323", monospace;
+    font-weight: 400;
+    font-size: large;
+    font-style: normal;
+}
+
+/* #endregion */
+
+/* #region Colors */
+
+.color_01 {
+    color: red;
+}
+
+.bg_color_01 {
+    background-color: red;
+}
+
+/* #endregion */
+
+/* #region Display */
+
+.wh_01 {
+    width: 1em;
+    height: 1em;
+}
+
+.wh_02 {
+    width: 20em;
+    height: 5em;
+}
+
+.wh_03 {
+    width: 60em;
+}
+
+.wh_04 {
+    width: 5em;
+    height: 5em;
+}
+
+.wh_05 {
+    width: 15em;
+}
+
+.wh_06 {
+    width: 2em;
+    height: 1.5em;
+}
+
+.wh_07 {
+    width: 7em;
+}
+
+.border_01 {
+    border: 2px solid black;
+    padding: 20px;
+}
+
+/* #endregion */
+
+/* #region Positions */
+
+.grid_01 {
+    display: grid;
+    grid-template-columns: min-content min-content;
+    grid-template-rows: min-content min-content;
+    grid-gap: .5em;
+}
+
+.grid_02 {
+    display: grid;
+    grid-template-columns: min-content min-content;
+    grid-gap: .5em;
+}
+
+.margin_01 {
+    margin: 0em;
+}
+
+.margin_02 {
+    margin-bottom: 0em;
+}
+
+.margin_03 {
+    margin-top: 0em;
+}
+
+/* #endregion */
+
+/* #region Chat */
+
+.wh_chat {
+    width: 60em;
+    height: 10em;
+    overflow: scroll;
+}
+
+/* #endregion */
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.rotating {
+    animation: spin 1s linear infinite;
+}
