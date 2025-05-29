@@ -14,12 +14,12 @@ const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
         // Allowed origins
-        origin: "*",
-        // [
-        //     "https://gearscreen.github.io",
-        //     "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/",
-        //     //"/https:\/\/gearscreen\.github\.io($|\/)/, // Regex for all subpaths"
-        // ],
+        origin: //"*",
+        [
+            "https://gearscreen.github.io",
+            "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/",
+            //"/https:\/\/gearscreen\.github\.io($|\/)/, // Regex for all subpaths"
+        ],
         methods: ["GET", "POST"],
     },
 });
