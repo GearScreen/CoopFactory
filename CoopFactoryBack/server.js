@@ -13,7 +13,10 @@ app.use(cors()); // Allow cross-origin requests
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/", // Allowed origins : *, https://gearscreen.github.io/CoopFactory/CoopFactoryFront/
+        origin: [  // Allowed origins : *, https://gearscreen.github.io/CoopFactory/CoopFactoryFront/ /https:\/\/gearscreen\.github\.io($|\/)/, // Regex for all subpaths
+            "https://gearscreen.github.io", // Root domain
+            "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/" // Specific path
+        ],
         methods: ["GET", "POST"],
     },
 });
