@@ -9,25 +9,25 @@ function generateRandomUsername() {
     return `${randomAdjective}${randomNoun}${randomNumber}`;
 }
 
-function get_Random_Username_From_API(onComplete)
+function get_Random_Username_From_API(onComplete, onFail = null)
 {
     fetchDataFromApi('https://usernameapiv1.vercel.app/api/random-usernames',
         (data) => {
             const username = data.usernames[0];
             console.log("Username Generated:", username)
             onComplete(username);
-        });
+        }, onFail);
 }
 
-function generateUsernameFromAPI() {
+function getDefaultUsername() {
     get_Random_Username_From_API((username) => {
         setUsername(username);
-    });
+    }, () => setUsername(generateRandomUsername()));
 }
 
 // #endregion Username
 
-function fetchDataFromApi(endpoint, onComplete) {
+function fetchDataFromApi(endpoint, onComplete, onFail) {
     fetch(endpoint)
         .then((response) => {
             if (!response.ok) {
@@ -41,6 +41,7 @@ function fetchDataFromApi(endpoint, onComplete) {
         })
         .catch((error) => {
             console.error("Error fetching data:", error);
+            if (onFail) onFail();
         });
 }
 

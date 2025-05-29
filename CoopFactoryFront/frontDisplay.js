@@ -1,6 +1,6 @@
 // When DOM Has Finished Loading
 document.addEventListener("DOMContentLoaded", () => {
-    generateUsernameFromAPI();
+    getDefaultUsername();
 
     showLoading();
 

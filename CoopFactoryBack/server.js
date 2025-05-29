@@ -13,10 +13,13 @@ app.use(cors()); // Allow cross-origin requests
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: [  // Allowed origins : *, https://gearscreen.github.io/CoopFactory/CoopFactoryFront/ /https:\/\/gearscreen\.github\.io($|\/)/, // Regex for all subpaths
-            "https://gearscreen.github.io", // Root domain
-            "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/" // Specific path
-        ],
+        // Allowed origins
+        origin: "*",
+        // [
+        //     "https://gearscreen.github.io",
+        //     "https://gearscreen.github.io/CoopFactory/CoopFactoryFront/",
+        //     //"/https:\/\/gearscreen\.github\.io($|\/)/, // Regex for all subpaths"
+        // ],
         methods: ["GET", "POST"],
     },
 });
@@ -45,7 +48,7 @@ io.on("connection", (socket) => {
     // CREATE Room
     socket.on("createRoom", (roomId, playerUsername) => {
         if (socket.gameRoom) {
-            sendDisplayMessage("Cannot create a Room While already in One", true);
+            sendDisplayMessage(socket.id, "Cannot create a Room While already in One", true);
             return;
         }
 
@@ -278,15 +281,11 @@ io.on("connection", (socket) => {
             ressources: player.ressources
         };
     }
-
-    function sendDisplayMessage(message, error) {
-        socket.emit("displayMessage", message, error);
-    }
 });
 
 function generateGameRoom(roomId, players = []) {
     return new GameRoom(roomId, players,
-        new Action("Game Error", [(args) => sendDisplayMessage(args[0], true)]),
+        new Action("Game Error", [(args) => sendDisplayMessage(args[0], args[1], true)]),
         new Action("Score Increment", [() => emitScoreUpdate(rooms[roomId])]), // Score update on Score increment Event
         new Action("Ressources Increment", [() => ressourceUpdateAll(rooms[roomId])]), // () => emitRessourcesUpdate(socket.gameRoom.id)
         new Action("Ressources Deduct", [() => ressourceUpdateAll(rooms[roomId])]), // args[0] = payer, (args) => emitRessourcesUpdate(args[0].id)
@@ -303,6 +302,10 @@ function checkRoom(room) {
     }
 
     return room;
+}
+
+function sendDisplayMessage(playerId, message, error) {
+    io.to(playerId).emit("displayMessage", message, error);
 }
 
 // Global Functions (Room)

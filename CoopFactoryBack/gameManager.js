@@ -101,8 +101,8 @@ class GameRoom extends GameInfo {
         ]);
     }
 
-    gameError(message) {
-        this.gameErrorAction.invoke(message);
+    gameError(playerId, message) {
+        this.gameErrorAction.invoke(playerId, message);
     }
 
     // SCORE
@@ -169,7 +169,7 @@ class GameRoom extends GameInfo {
 
         if (partInfo.upgradeCost > player.ressources || !additionalCondition()) {
             //console.log("Not enough ressources");
-            this.gameError("Not enough ressources");
+            this.gameError(player.id, "Not enough ressources");
             return;
         }
 
